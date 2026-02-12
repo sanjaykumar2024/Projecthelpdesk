@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Helpdesk</title>
+    <meta name="description" content="Helpdesk Dashboard - View statistics and manage tickets">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🎫 HelpDesk</div>
+                <div class="logo-sub">Ticketing System</div>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html" class="active" data-tooltip="Dashboard"><span
+                            class="nav-icon">📊</span><span class="nav-text">Dashboard</span></a></li>
+                <li><a href="tickets.html" data-tooltip="Tickets"><span class="nav-icon">🎫</span><span
+                            class="nav-text">Tickets</span></a></li>
+                <li><a href="create-ticket.html" data-tooltip="Create Ticket"><span class="nav-icon">➕</span><span
+                            class="nav-text">Create Ticket</span></a></li>
+                <li data-role="ADMIN"><a href="tickets.html?view=all" data-tooltip="All Tickets"><span
+                            class="nav-icon">📋</span><span class="nav-text">All Tickets</span></a>
+                </li>
+            </ul>
+            <div class="sidebar-user">
+                <div class="user-avatar">U</div>
+                <div class="user-info">
+                    <div class="user-name">User</div>
+                    <div class="user-role">Role</div>
+                </div>
+                <button onclick="Auth.logout()" class="logout-btn" title="Logout">🚪</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+                        <span class="toggle-icon">☰</span>
+                    </button>
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                    <a href="create-ticket.html" class="btn btn-primary">➕ New Ticket</a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">🎫</div>
+                    <div class="stat-info">
+                        <h3 id="statTotal">0</h3>
+                        <p>Total Tickets</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">📂</div>
+                    <div class="stat-info">
+                        <h3 id="statOpen">0</h3>
+                        <p>Open</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">⏳</div>
+                    <div class="stat-info">
+                        <h3 id="statInProgress">0</h3>
+                        <p>In Progress</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">⏸️</div>
+                    <div class="stat-info">
+                        <h3 id="statOnHold">0</h3>
+                        <p>On Hold</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <h3 id="statResolved">0</h3>
+                        <p>Resolved</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon gray">🔒</div>
+                    <div class="stat-info">
+                        <h3 id="statClosed">0</h3>
+                        <p>Closed</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📈 Tickets by Status</h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>📊 Tickets by Priority</h3>
+                    <canvas id="priorityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>🏢 Tickets by Department</h3>
+                    <canvas id="departmentChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Tickets -->
+            <div class="table-container mt-3">
+                <div class="table-header">
+                    <h2>Recent Tickets</h2>
+                    <a href="tickets.html" class="btn btn-outline btn-sm">View All →</a>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Department</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTickets">
+                        <tr>
+                            <td colspan="6" class="text-center" style="padding:40px;color:var(--text-muted)">Loading...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        let statusChartInstance, priorityChartInstance, departmentChartInstance;
+
+        async function loadDashboard() {
+            try {
+                // Load stats (admin/agent only)
+                const role = Auth.getRole();
+                if (role === 'ADMIN' || role === 'AGENT') {
+                    try {
+                        const stats = await API.get('/dashboard/stats');
+                        animateCounter(document.getElementById('statTotal'), stats.totalTickets);
+                        animateCounter(document.getElementById('statOpen'), stats.openTickets);
+                        animateCounter(document.getElementById('statInProgress'), stats.inProgressTickets);
+                        animateCounter(document.getElementById('statOnHold'), stats.onHoldTickets);
+                        animateCounter(document.getElementById('statResolved'), stats.resolvedTickets);
+                        animateCounter(document.getElementById('statClosed'), stats.closedTickets);
+                        renderCharts(stats);
+                    } catch (e) {
+                        console.log('Stats not available for this role');
+                    }
+                }
+
+                // Load recent tickets
+                const tickets = await API.get('/tickets');
+                renderRecentTickets(tickets.slice(0, 5));
+
+                // If user role, show their ticket stats
+                if (role === 'USER') {
+                    const total = tickets.length;
+                    const open = tickets.filter(t => t.status === 'OPEN').length;
+                    const inP = tickets.filter(t => t.status === 'IN_PROGRESS').length;
+                    const onH = tickets.filter(t => t.status === 'ON_HOLD').length;
+                    const res = tickets.filter(t => t.status === 'RESOLVED').length;
+                    const cls = tickets.filter(t => t.status === 'CLOSED').length;
+                    animateCounter(document.getElementById('statTotal'), total);
+                    animateCounter(document.getElementById('statOpen'), open);
+                    animateCounter(document.getElementById('statInProgress'), inP);
+                    animateCounter(document.getElementById('statOnHold'), onH);
+                    animateCounter(document.getElementById('statResolved'), res);
+                    animateCounter(document.getElementById('statClosed'), cls);
+
+                    renderUserCharts(tickets);
+                }
+            } catch (error) {
+                Toast.error('Failed to load dashboard: ' + error.message);
+            }
+        }
+
+        function renderCharts(stats) {
+            const chartColors = {
+                blue: 'rgba(59, 130, 246, 0.8)',
+                orange: 'rgba(245, 158, 11, 0.8)',
+                purple: 'rgba(168, 85, 247, 0.8)',
+                green: 'rgba(16, 185, 129, 0.8)',
+                gray: 'rgba(107, 114, 128, 0.8)',
+                red: 'rgba(239, 68, 68, 0.8)',
+                cyan: 'rgba(78, 205, 196, 0.8)',
+                pink: 'rgba(255, 107, 157, 0.8)'
+            };
+
+            // Status Chart
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            if (statusChartInstance) statusChartInstance.destroy();
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Open', 'In Progress', 'On Hold', 'Resolved', 'Closed'],
+                    datasets: [{
+                        data: [stats.openTickets, stats.inProgressTickets, stats.onHoldTickets, stats.resolvedTickets, stats.closedTickets],
+                        backgroundColor: [chartColors.blue, chartColors.orange, chartColors.purple, chartColors.green, chartColors.gray],
+                        borderWidth: 0,
+                        borderRadius: 5,
+                        spacing: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 16, font: { family: 'Inter' } } }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // Priority Chart
+            const ctxPriority = document.getElementById('priorityChart').getContext('2d');
+            if (priorityChartInstance) priorityChartInstance.destroy();
+            priorityChartInstance = new Chart(ctxPriority, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.ticketsByPriority || {}),
+                    datasets: [{
+                        label: 'Tickets',
+                        data: Object.values(stats.ticketsByPriority || {}),
+                        backgroundColor: [chartColors.green, chartColors.blue, chartColors.orange, chartColors.red],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Department Chart
+            const ctxDept = document.getElementById('departmentChart').getContext('2d');
+            if (departmentChartInstance) departmentChartInstance.destroy();
+            departmentChartInstance = new Chart(ctxDept, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.ticketsByDepartment || {}),
+                    datasets: [{
+                        label: 'Tickets',
+                        data: Object.values(stats.ticketsByDepartment || {}),
+                        backgroundColor: [chartColors.cyan, chartColors.pink, chartColors.purple, chartColors.blue, chartColors.orange],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: false } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderUserCharts(tickets) {
+            const statusCounts = {};
+            const priorityCounts = {};
+            tickets.forEach(t => {
+                statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
+                priorityCounts[t.priority] = (priorityCounts[t.priority] || 0) + 1;
+            });
+
+            const chartColors = {
+                OPEN: 'rgba(59, 130, 246, 0.8)',
+                IN_PROGRESS: 'rgba(245, 158, 11, 0.8)',
+                ON_HOLD: 'rgba(168, 85, 247, 0.8)',
+                RESOLVED: 'rgba(16, 185, 129, 0.8)',
+                CLOSED: 'rgba(107, 114, 128, 0.8)',
+                LOW: 'rgba(16, 185, 129, 0.8)',
+                MEDIUM: 'rgba(59, 130, 246, 0.8)',
+                HIGH: 'rgba(245, 158, 11, 0.8)',
+                URGENT: 'rgba(239, 68, 68, 0.8)'
+            };
+
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            if (statusChartInstance) statusChartInstance.destroy();
+            statusChartInstance = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: Object.keys(statusCounts).map(k => chartColors[k] || '#999'),
+                        borderWidth: 0, borderRadius: 5, spacing: 3
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+            });
+
+            const ctxPriority = document.getElementById('priorityChart').getContext('2d');
+            if (priorityChartInstance) priorityChartInstance.destroy();
+            priorityChartInstance = new Chart(ctxPriority, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(priorityCounts),
+                    datasets: [{
+                        label: 'Tickets',
+                        data: Object.values(priorityCounts),
+                        backgroundColor: Object.keys(priorityCounts).map(k => chartColors[k] || '#999'),
+                        borderWidth: 0, borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true, plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        function renderRecentTickets(tickets) {
+            const tbody = document.getElementById('recentTickets');
+            if (!tickets.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:40px"><div class="empty-state"><div class="empty-icon">📭</div><h3>No tickets yet</h3><p>Create your first ticket to get started</p></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = tickets.map((t, i) => `
+                <tr style="animation-delay:${i * 0.1}s;cursor:pointer" onclick="window.location.href='ticket-detail.html?id=${t.id}'">
+                    <td><strong>#${t.id}</strong></td>
+                    <td>${t.title}</td>
+                    <td>${getStatusBadge(t.status)}</td>
+                    <td>${getPriorityBadge(t.priority)}</td>
+                    <td>${t.departmentName}</td>
+                    <td style="color:var(--text-muted);font-size:0.8rem">${formatDate(t.createdAt)}</td>
+                </tr>
+            `).join('');
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

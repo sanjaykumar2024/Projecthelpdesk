@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Ticket | Helpdesk</title>
+    <meta name="description" content="Create a new support ticket">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🎫 HelpDesk</div>
+                <div class="logo-sub">Ticketing System</div>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html" data-tooltip="Dashboard"><span class="nav-icon">📊</span><span
+                            class="nav-text">Dashboard</span></a></li>
+                <li><a href="tickets.html" data-tooltip="Tickets"><span class="nav-icon">🎫</span><span
+                            class="nav-text">Tickets</span></a></li>
+                <li><a href="create-ticket.html" class="active" data-tooltip="Create Ticket"><span
+                            class="nav-icon">➕</span><span class="nav-text">Create Ticket</span></a></li>
+                <li data-role="ADMIN"><a href="tickets.html?view=all" data-tooltip="All Tickets"><span
+                            class="nav-icon">📋</span><span class="nav-text">All Tickets</span></a>
+                </li>
+            </ul>
+            <div class="sidebar-user">
+                <div class="user-avatar">U</div>
+                <div class="user-info">
+                    <div class="user-name">User</div>
+                    <div class="user-role">Role</div>
+                </div>
+                <button onclick="Auth.logout()" class="logout-btn" title="Logout">🚪</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+                        <span class="toggle-icon">☰</span>
+                    </button>
+                    <h1>➕ Create Ticket</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                </div>
+            </div>
+
+            <div class="glass-card" style="max-width:700px;animation:fadeInUp 0.5s ease">
+                <form id="createTicketForm">
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" placeholder="Brief summary of your issue"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="description"
+                            placeholder="Provide detailed information about your issue..." rows="5" required></textarea>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-control" id="priority" required>
+                                <option value="">Select priority</option>
+                                <option value="LOW">🟢 Low</option>
+                                <option value="MEDIUM">🔵 Medium</option>
+                                <option value="HIGH">🟡 High</option>
+                                <option value="URGENT">🔴 Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department</label>
+                            <select class="form-control" id="departmentId" required>
+                                <option value="">Select department</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="width:100%">
+                        🎫 Submit Ticket
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        async function loadDepartments() {
+            try {
+                const depts = await API.get('/departments');
+                const select = document.getElementById('departmentId');
+                depts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                Toast.warning('No departments found. Ask admin to create one first.');
+            }
+        }
+
+        document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.textContent = '⏳ Submitting...';
+            btn.disabled = true;
+
+            try {
+                const ticket = await API.post('/tickets', {
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    priority: document.getElementById('priority').value,
+                    departmentId: parseInt(document.getElementById('departmentId').value)
+                });
+
+                Toast.success('Ticket #' + ticket.id + ' created successfully!');
+                setTimeout(() => window.location.href = 'ticket-detail.html?id=' + ticket.id, 1000);
+            } catch (error) {
+                Toast.error(error.message || 'Failed to create ticket');
+                btn.textContent = '🎫 Submit Ticket';
+                btn.disabled = false;
+            }
+        });
+
+        loadDepartments();
+    </script>
+</body>
+
+</html>
