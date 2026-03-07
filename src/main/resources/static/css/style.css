@@ -2009,73 +2009,162 @@ textarea.form-control {
     flex-shrink: 0;
 }
 
-/* Right Side Animated Panel */
-.login-orb {
+/* ===== VIBRANT ANIMATED PANEL ===== */
+.animated-panel {
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 30%, #0a1628 60%, #0a0a1a 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Colorful floating shapes */
+.anim-shape {
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.5;
-    animation: orbFloat 8s ease-in-out infinite;
+    opacity: 0.6;
+    filter: blur(40px);
 }
 
-.orb-1 {
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, #6C63FF 0%, transparent 70%);
-    top: -80px;
-    right: -60px;
-    animation-delay: 0s;
-}
-
-.orb-2 {
-    width: 250px;
-    height: 250px;
-    background: radial-gradient(circle, #4ECDC4 0%, transparent 70%);
-    bottom: -60px;
-    left: -40px;
-    animation-delay: -2s;
-    animation-duration: 10s;
-}
-
-.orb-3 {
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, #F472B6 0%, transparent 70%);
-    top: 40%;
-    left: 20%;
-    animation-delay: -4s;
-    animation-duration: 7s;
-}
-
-.orb-4 {
+.shape-1 {
     width: 200px;
     height: 200px;
-    background: radial-gradient(circle, #818CF8 0%, transparent 70%);
-    bottom: 20%;
-    right: 10%;
-    animation-delay: -3s;
-    animation-duration: 9s;
+    background: #FF6B6B;
+    top: -50px;
+    right: -30px;
+    animation: shapeFloat1 7s ease-in-out infinite;
 }
 
-@keyframes orbFloat {
+.shape-2 {
+    width: 180px;
+    height: 180px;
+    background: #4ECDC4;
+    bottom: 10%;
+    left: -40px;
+    animation: shapeFloat2 9s ease-in-out infinite;
+}
+
+.shape-3 {
+    width: 120px;
+    height: 120px;
+    background: #FFE66D;
+    top: 30%;
+    right: 15%;
+    border-radius: 30%;
+    animation: shapeFloat3 6s ease-in-out infinite;
+}
+
+.shape-4 {
+    width: 160px;
+    height: 160px;
+    background: #A855F7;
+    bottom: -30px;
+    right: 20%;
+    animation: shapeFloat1 8s ease-in-out infinite reverse;
+}
+
+.shape-5 {
+    width: 100px;
+    height: 100px;
+    background: #F472B6;
+    top: 15%;
+    left: 25%;
+    border-radius: 20%;
+    animation: shapeFloat2 5s ease-in-out infinite;
+}
+
+.shape-6 {
+    width: 140px;
+    height: 140px;
+    background: #38BDF8;
+    top: 60%;
+    right: -20px;
+    animation: shapeFloat3 10s ease-in-out infinite;
+}
+
+/* Animated rings */
+.anim-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.ring-1 {
+    width: 300px;
+    height: 300px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: ringRotate 20s linear infinite;
+}
+
+.ring-2 {
+    width: 200px;
+    height: 200px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.05);
+    animation: ringRotate 15s linear infinite reverse;
+}
+
+@keyframes shapeFloat1 {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+
+    25% {
+        transform: translate(40px, -30px) rotate(45deg) scale(1.1);
+    }
+
+    50% {
+        transform: translate(-20px, 40px) rotate(90deg) scale(0.9);
+    }
+
+    75% {
+        transform: translate(20px, 20px) rotate(135deg) scale(1.05);
+    }
+}
+
+@keyframes shapeFloat2 {
 
     0%,
     100% {
         transform: translate(0, 0) scale(1);
     }
 
-    25% {
-        transform: translate(30px, -20px) scale(1.05);
+    33% {
+        transform: translate(50px, -40px) scale(1.15);
+    }
+
+    66% {
+        transform: translate(-30px, 30px) scale(0.85);
+    }
+}
+
+@keyframes shapeFloat3 {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
     }
 
     50% {
-        transform: translate(-20px, 30px) scale(0.95);
-    }
-
-    75% {
-        transform: translate(15px, 15px) scale(1.02);
+        transform: translate(-40px, -30px) rotate(180deg);
     }
 }
+
+@keyframes ringRotate {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
 
 .login-grid {
     position: absolute;
