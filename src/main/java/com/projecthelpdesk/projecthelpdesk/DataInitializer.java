@@ -1,5 +1,7 @@
 package com.projecthelpdesk.projecthelpdesk;
 
+import javax.sql.DataSource;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,17 +21,27 @@ public class DataInitializer implements CommandLineRunner {
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DataSource dataSource;
 
     public DataInitializer(RoleRepository roleRepository, DepartmentRepository departmentRepository,
-            UserRepository userRepository, PasswordEncoder passwordEncoder) {
+            UserRepository userRepository, PasswordEncoder passwordEncoder, DataSource dataSource) {
         this.roleRepository = roleRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.dataSource = dataSource;
     }
 
     @Override
     public void run(String... args) {
+        // Fix: Allow password column to be NULL (for Google Sign-In users)
+        try (var conn = dataSource.getConnection(); var stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL");
+            System.out.println("Schema fix: password column set to nullable.");
+        } catch (Exception e) {
+            System.out.println("Schema fix skipped: " + e.getMessage());
+        }
+
         // Seed roles
         for (ERole eRole : ERole.values()) {
             if (roleRepository.findByRoleName(eRole).isEmpty()) {
