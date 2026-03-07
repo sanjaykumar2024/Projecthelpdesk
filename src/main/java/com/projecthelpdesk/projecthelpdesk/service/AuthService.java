@@ -127,8 +127,38 @@ public class AuthService {
             throw new BadRequestException("Account not verified. Please verify your email.");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Invalid email or password");
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
+        return new AuthResponse(token, user.getId(), user.getEmail(),
+                user.getFullName(), user.getRole().getRoleName().name());
+    }
+
+    public AuthResponse processOAuth2Login(String email, String fullName, String provider) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            Role role = roleRepository.findByRoleName(ERole.USER)
+                    .orElseGet(() -> {
+                        Role newRole = new Role(ERole.USER);
+                        return roleRepository.save(newRole);
+                    });
+
+            user = new User();
+            user.setEmail(email);
+            user.setFullName(fullName);
+            user.setPassword(null);
+            user.setRole(role);
+            user.setAuthProvider(provider);
+            user.setEnabled(true);
+            userRepository.save(user);
+        } else {
+            if (!user.isEnabled()) {
+                user.setEnabled(true);
+                userRepository.save(user);
+            }
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());

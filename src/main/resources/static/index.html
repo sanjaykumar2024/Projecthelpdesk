@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- Google Fonts for the new design -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
@@ -59,14 +61,7 @@
                 </div>
 
                 <div class="social-login">
-                    <button class="social-btn">
-                        <img src="https://cdn-icons-png.flaticon.com/512/0/747.png" alt="Apple">
-                        Apple
-                    </button>
-                    <button class="social-btn">
-                        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google">
-                        Google
-                    </button>
+                    <div id="googleSignInBtn" style="display:flex;justify-content:center;"></div>
                 </div>
 
                 <div class="mobile-footer">
@@ -93,6 +88,7 @@
             window.location.href = '/dashboard.html';
         }
 
+        // --- Normal email/password login ---
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('loginBtn');
@@ -113,6 +109,41 @@
                 Toast.error(error.message || 'Invalid email or password');
                 btn.textContent = originalText;
                 btn.disabled = false;
+            }
+        });
+
+        // --- Google Sign-In callback ---
+        async function handleGoogleCredential(response) {
+            try {
+                const data = await API.post('/auth/google', {
+                    credential: response.credential
+                });
+
+                Auth.setAuth(data);
+                Toast.success('Welcome, ' + data.fullName + '!');
+                setTimeout(() => window.location.href = '/dashboard.html', 800);
+            } catch (error) {
+                Toast.error(error.message || 'Google sign-in failed');
+            }
+        }
+
+        // --- Initialize Google Sign-In button ---
+        window.addEventListener('load', () => {
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.initialize({
+                    client_id: '140949296868-euuvilv1i88lfd8o2so3dmajj9k065k3.apps.googleusercontent.com',
+                    callback: handleGoogleCredential
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSignInBtn'),
+                    {
+                        theme: 'outline',
+                        size: 'large',
+                        width: 320,
+                        text: 'signin_with',
+                        shape: 'rectangular'
+                    }
+                );
             }
         });
     </script>
