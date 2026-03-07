@@ -38,6 +38,10 @@ public class User {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    private String otp;
+    private LocalDateTime otpExpiry;
+    private boolean enabled = false;
+
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -102,5 +106,29 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+
+    public LocalDateTime getOtpExpiry() {
+        return otpExpiry;
+    }
+
+    public void setOtpExpiry(LocalDateTime otpExpiry) {
+        this.otpExpiry = otpExpiry;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

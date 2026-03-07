@@ -1,34 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Helpdesk</title>
     <meta name="description" content="Login to the Multi-Department Helpdesk Ticketing System">
     <link rel="stylesheet" href="/css/style.css">
+    <!-- Google Fonts for the new design -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="auth-page">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1>🎫 HelpDesk</h1>
-                <p>Sign in to your account</p>
+    <div class="auth-split-layout">
+        <!-- Left Side: Login Form -->
+        <div class="auth-left">
+            <div class="auth-content">
+                <div class="brand-logo">
+                    <div class="logo-circle"></div>
+                    <span>HelpDesk</span>
+                </div>
+
+                <div class="auth-header-new">
+                    <h1>Hello!</h1>
+                    <p>Sign in to your account</p>
+                </div>
+
+                <!-- Tab Switcher (Visual only for now, can be functional if needed) -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active">Sign In</button>
+                    <a href="/register.html" class="auth-tab">Sign Up</a>
+                </div>
+
+                <form id="loginForm" class="modern-form">
+                    <div class="form-group-new">
+                        <label>Email Address</label>
+                        <input type="email" id="email" placeholder="email@mail.com" required>
+                    </div>
+                    <div class="form-group-new">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Your password" required>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="custom-checkbox">
+                            <input type="checkbox">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-new btn-primary-new" id="loginBtn">Login</button>
+                </form>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="social-login">
+                    <button class="social-btn">
+                        <img src="https://cdn-icons-png.flaticon.com/512/0/747.png" alt="Apple">
+                        Apple
+                    </button>
+                    <button class="social-btn">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google">
+                        Google
+                    </button>
+                </div>
+
+                <div class="mobile-footer">
+                    Don't have an account? <a href="/register.html">Sign Up here</a>
+                </div>
             </div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label class="form-label">Email Address</label>
-                    <input type="email" class="form-control" id="email" placeholder="you@example.com" required>
+        </div>
+
+        <!-- Right Side: Abstract Image -->
+        <div class="auth-right">
+            <div class="hero-image" style="background-image: url('/images/login-bg.png');">
+                <div class="hero-overlay">
+                    <h2>Welcome<br>to your world!</h2>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
-                    Sign In →
-                </button>
-            </form>
-            <div class="auth-link">
-                Don't have an account? <a href="/register.html">Create one</a>
             </div>
         </div>
     </div>
@@ -44,6 +96,7 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('loginBtn');
+            const originalText = btn.textContent;
             btn.textContent = 'Signing in...';
             btn.disabled = true;
 
@@ -58,10 +111,11 @@
                 setTimeout(() => window.location.href = '/dashboard.html', 800);
             } catch (error) {
                 Toast.error(error.message || 'Invalid email or password');
-                btn.textContent = 'Sign In →';
+                btn.textContent = originalText;
                 btn.disabled = false;
             }
         });
     </script>
 </body>
+
 </html>

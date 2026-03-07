@@ -65,8 +65,18 @@ public class DataInitializer implements CommandLineRunner {
             admin.setEmail("admin@helpdesk.com");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setRole(adminRole);
+            admin.setEnabled(true);
             userRepository.save(admin);
             System.out.println("Created default admin: admin@helpdesk.com / admin123");
+        } else {
+            // Ensure existing admin is enabled (migration fix)
+            userRepository.findByEmail("admin@helpdesk.com").ifPresent(admin -> {
+                if (!admin.isEnabled()) {
+                    admin.setEnabled(true);
+                    userRepository.save(admin);
+                    System.out.println("Enabled existing admin user.");
+                }
+            });
         }
     }
 }

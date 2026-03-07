@@ -13,48 +13,36 @@
     <div class="page-loader">
         <div class="loader-spinner"></div>
     </div>
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo">🎫 HelpDesk</a>
 
-    <div class="app-layout">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">🎫 HelpDesk</div>
-                <div class="logo-sub">Ticketing System</div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="tickets.html" class="nav-link active">My Tickets</a>
+                <a href="create-ticket.html" class="nav-link">New Ticket</a>
+                <a href="tickets.html?view=all" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="dashboard.html?view=admin" class="nav-link" data-role="ADMIN" style="display:none">Manage
+                    Agents</a>
             </div>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.html" data-tooltip="Dashboard"><span class="nav-icon">📊</span><span
-                            class="nav-text">Dashboard</span></a></li>
-                <li><a href="tickets.html" class="active" data-tooltip="Tickets"><span class="nav-icon">🎫</span><span
-                            class="nav-text">Tickets</span></a></li>
-                <li><a href="create-ticket.html" data-tooltip="Create Ticket"><span class="nav-icon">➕</span><span
-                            class="nav-text">Create Ticket</span></a></li>
-                <li data-role="ADMIN"><a href="tickets.html?view=all" data-tooltip="All Tickets"><span
-                            class="nav-icon">📋</span><span class="nav-text">All Tickets</span></a>
-                </li>
-            </ul>
-            <div class="sidebar-user">
-                <div class="user-avatar">U</div>
-                <div class="user-info">
-                    <div class="user-name">User</div>
-                    <div class="user-role">Role</div>
-                </div>
-                <button onclick="Auth.logout()" class="logout-btn" title="Logout">🚪</button>
-            </div>
-        </aside>
 
-        <main class="main-content">
-            <div class="top-bar">
-                <div class="top-bar-left">
-                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
-                        <span class="toggle-icon">☰</span>
-                    </button>
-                    <h1>🎫 Tickets</h1>
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
                 </div>
-                <div class="top-bar-actions">
-                    <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
-                    <a href="create-ticket.html" class="btn btn-primary">➕ New Ticket</a>
-                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout" style="display:block">
+        <main class="main-content" style="margin-left:0;padding-top:20px;max-width:1200px;margin:0 auto">
+            <div class="mb-3 d-flex justify-between items-center">
+                <h1>🎫 Tickets</h1>
+                <a href="create-ticket.html" class="btn btn-primary">➕ New Ticket</a>
             </div>
 
             <!-- Filters -->

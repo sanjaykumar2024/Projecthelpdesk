@@ -67,7 +67,9 @@ public class TicketService {
         String roleName = user.getRole().getRoleName().name();
         List<Ticket> tickets;
 
-        if ("AGENT".equals(roleName)) {
+        if ("ADMIN".equals(roleName)) {
+            tickets = ticketRepository.findAll();
+        } else if ("AGENT".equals(roleName)) {
             tickets = ticketRepository.findByAssignedAgentId(user.getId());
         } else {
             tickets = ticketRepository.findByCreatorId(user.getId());

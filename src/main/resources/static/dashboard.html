@@ -5,9 +5,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Helpdesk</title>
-    <meta name="description" content="Helpdesk Dashboard - View statistics and manage tickets">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Subtle dashboard enhancements */
+        .welcome-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.07) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(6, 182, 212, 0.03) 100%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px 36px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeInDown 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .welcome-left h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-left p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .welcome-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .role-pill.admin {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
+
+        .role-pill.agent {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .role-pill.user {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3B82F6;
+        }
+
+        .welcome-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .welcome-right {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-right .btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Stat card colored top borders on hover */
+        .stat-card:nth-child(1):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #8B5CF6 inset;
+        }
+
+        .stat-card:nth-child(2):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #3B82F6 inset;
+        }
+
+        .stat-card:nth-child(3):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #F59E0B inset;
+        }
+
+        .stat-card:nth-child(4):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #A855F7 inset;
+        }
+
+        .stat-card:nth-child(5):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #10B981 inset;
+        }
+
+        .stat-card:nth-child(6):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #6B7280 inset;
+        }
+
+        /* Chart card subtle header bar */
+        .chart-card {
+            position: relative;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 24px;
+            right: 24px;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 0 0 4px 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Recent tickets row highlight */
+        .data-table tr:hover td {
+            background: rgba(139, 92, 246, 0.04);
+        }
+
+        @media (max-width: 768px) {
+            .welcome-banner {
+                flex-direction: column;
+                text-align: center;
+                padding: 24px 20px;
+            }
+
+            .welcome-meta {
+                justify-content: center;
+            }
+
+            .welcome-right {
+                margin-top: 16px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -16,141 +176,174 @@
         <div class="loader-spinner"></div>
     </div>
 
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo">🎫 HelpDesk</a>
 
-    <div class="app-layout">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">🎫 HelpDesk</div>
-                <div class="logo-sub">Ticketing System</div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="tickets.html" class="nav-link">My Tickets</a>
+                <a href="create-ticket.html" class="nav-link">New Ticket</a>
+                <a href="tickets.html?view=all" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="#" class="nav-link" data-role="ADMIN" id="nav-manage-agents" onclick="showAdminView(event)"
+                    style="display:none">Manage Agents</a>
             </div>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.html" class="active" data-tooltip="Dashboard"><span
-                            class="nav-icon">📊</span><span class="nav-text">Dashboard</span></a></li>
-                <li><a href="tickets.html" data-tooltip="Tickets"><span class="nav-icon">🎫</span><span
-                            class="nav-text">Tickets</span></a></li>
-                <li><a href="create-ticket.html" data-tooltip="Create Ticket"><span class="nav-icon">➕</span><span
-                            class="nav-text">Create Ticket</span></a></li>
-                <li data-role="ADMIN"><a href="tickets.html?view=all" data-tooltip="All Tickets"><span
-                            class="nav-icon">📋</span><span class="nav-text">All Tickets</span></a>
-                </li>
-            </ul>
-            <div class="sidebar-user">
-                <div class="user-avatar">U</div>
-                <div class="user-info">
-                    <div class="user-name">User</div>
-                    <div class="user-role">Role</div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
                 </div>
-                <button onclick="Auth.logout()" class="logout-btn" title="Logout">🚪</button>
             </div>
-        </aside>
+        </div>
+    </nav>
 
+    <div class="app-layout" style="display:block">
         <!-- Main Content -->
         <main class="main-content">
-            <div class="top-bar">
-                <div class="top-bar-left">
-                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
-                        <span class="toggle-icon">☰</span>
-                    </button>
-                    <h1>Dashboard</h1>
+
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboard-view">
+                <!-- Welcome Banner -->
+                <div class="welcome-banner">
+                    <div class="welcome-left">
+                        <h1 id="welcomeHeading">Welcome Back! 👋</h1>
+                        <p>Here's what's happening today.</p>
+                        <div class="welcome-meta">
+                            <span class="role-pill user" id="rolePill">USER</span>
+                            <span class="welcome-date" id="welcomeDate"></span>
+                        </div>
+                    </div>
+                    <div class="welcome-right">
+                        <a href="create-ticket.html" class="btn btn-primary btn-sm">➕ New Ticket</a>
+                        <a href="tickets.html" class="btn btn-outline btn-sm">📋 My Tickets</a>
+                    </div>
                 </div>
-                <div class="top-bar-actions">
-                    <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
-                    <a href="create-ticket.html" class="btn btn-primary">➕ New Ticket</a>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">🎫</div>
+                        <div class="stat-info">
+                            <h3 id="statTotal">0</h3>
+                            <p>Total Tickets</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📂</div>
+                        <div class="stat-info">
+                            <h3 id="statOpen">0</h3>
+                            <p>Open</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">⏳</div>
+                        <div class="stat-info">
+                            <h3 id="statInProgress">0</h3>
+                            <p>In Progress</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">⏸️</div>
+                        <div class="stat-info">
+                            <h3 id="statOnHold">0</h3>
+                            <p>On Hold</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-info">
+                            <h3 id="statResolved">0</h3>
+                            <p>Resolved</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gray">🔒</div>
+                        <div class="stat-info">
+                            <h3 id="statClosed">0</h3>
+                            <p>Closed</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>📈 Tickets by Status</h3>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📊 Tickets by Priority</h3>
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>🏢 Tickets by Department</h3>
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Tickets -->
+                <div class="table-container mt-3">
+                    <div class="table-header">
+                        <h2>Recent Tickets</h2>
+                        <a href="tickets.html" class="btn btn-outline btn-sm">View All →</a>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Department</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTickets">
+                            <tr>
+                                <td colspan="6" class="text-center" style="padding:40px;color:var(--text-muted)">
+                                    Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
-                    <div class="stat-icon blue">🎫</div>
-                    <div class="stat-info">
-                        <h3 id="statTotal">0</h3>
-                        <p>Total Tickets</p>
+            <!-- ADMIN VIEW (Manage Agents) -->
+            <div id="admin-view" style="display: none; animation: fadeIn 0.4s ease;">
+                <div class="text-center mb-3">
+                    <h1 style="font-size:2rem">Manage Agents</h1>
+                    <p style="color:var(--text-secondary)">Manage user roles and department assignments.</p>
+                </div>
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Registered Users</h2>
+                        <button class="btn btn-sm btn-outline" onclick="loadUsers()">Refresh</button>
                     </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon blue">📂</div>
-                    <div class="stat-info">
-                        <h3 id="statOpen">0</h3>
-                        <p>Open</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon orange">⏳</div>
-                    <div class="stat-info">
-                        <h3 id="statInProgress">0</h3>
-                        <p>In Progress</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon purple">⏸️</div>
-                    <div class="stat-info">
-                        <h3 id="statOnHold">0</h3>
-                        <p>On Hold</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green">✅</div>
-                    <div class="stat-info">
-                        <h3 id="statResolved">0</h3>
-                        <p>Resolved</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon gray">🔒</div>
-                    <div class="stat-info">
-                        <h3 id="statClosed">0</h3>
-                        <p>Closed</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>📈 Tickets by Status</h3>
-                    <canvas id="statusChart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>📊 Tickets by Priority</h3>
-                    <canvas id="priorityChart"></canvas>
-                </div>
-            </div>
-
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>🏢 Tickets by Department</h3>
-                    <canvas id="departmentChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Recent Tickets -->
-            <div class="table-container mt-3">
-                <div class="table-header">
-                    <h2>Recent Tickets</h2>
-                    <a href="tickets.html" class="btn btn-outline btn-sm">View All →</a>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Department</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTickets">
-                        <tr>
-                            <td colspan="6" class="text-center" style="padding:40px;color:var(--text-muted)">Loading...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </main>
     </div>
@@ -160,11 +353,31 @@
     <script>
         if (!Auth.requireAuth()) throw new Error('Not authenticated');
 
+        // Navigation Init
+        const user = Auth.getUser();
+        if (user) {
+            document.querySelector('.nav-avatar').textContent = user.fullName.charAt(0);
+            if (user.role === 'ADMIN') {
+                document.querySelectorAll('[data-role="ADMIN"]').forEach(el => el.style.display = 'block');
+            }
+
+            // Personalize welcome banner
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+            document.getElementById('welcomeHeading').textContent = `${greeting}, ${user.fullName}! 👋`;
+
+            const pill = document.getElementById('rolePill');
+            pill.textContent = user.role;
+            pill.className = 'role-pill ' + user.role.toLowerCase();
+
+            const now = new Date();
+            document.getElementById('welcomeDate').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        }
+
         let statusChartInstance, priorityChartInstance, departmentChartInstance;
 
         async function loadDashboard() {
             try {
-                // Load stats (admin/agent only)
                 const role = Auth.getRole();
                 if (role === 'ADMIN' || role === 'AGENT') {
                     try {
@@ -177,15 +390,13 @@
                         animateCounter(document.getElementById('statClosed'), stats.closedTickets);
                         renderCharts(stats);
                     } catch (e) {
-                        console.log('Stats not available for this role');
+                        console.log('Stats not available');
                     }
                 }
 
-                // Load recent tickets
                 const tickets = await API.get('/tickets');
                 renderRecentTickets(tickets.slice(0, 5));
 
-                // If user role, show their ticket stats
                 if (role === 'USER') {
                     const total = tickets.length;
                     const open = tickets.filter(t => t.status === 'OPEN').length;
@@ -199,15 +410,14 @@
                     animateCounter(document.getElementById('statOnHold'), onH);
                     animateCounter(document.getElementById('statResolved'), res);
                     animateCounter(document.getElementById('statClosed'), cls);
-
                     renderUserCharts(tickets);
                 }
             } catch (error) {
-                Toast.error('Failed to load dashboard: ' + error.message);
+                console.error(error);
             }
         }
 
-        function renderCharts(stats) {
+        function renderCharts(stats) { /* ... same charts code ... */
             const chartColors = {
                 blue: 'rgba(59, 130, 246, 0.8)',
                 orange: 'rgba(245, 158, 11, 0.8)',
@@ -219,7 +429,6 @@
                 pink: 'rgba(255, 107, 157, 0.8)'
             };
 
-            // Status Chart
             const ctxStatus = document.getElementById('statusChart').getContext('2d');
             if (statusChartInstance) statusChartInstance.destroy();
             statusChartInstance = new Chart(ctxStatus, {
@@ -229,73 +438,36 @@
                     datasets: [{
                         data: [stats.openTickets, stats.inProgressTickets, stats.onHoldTickets, stats.resolvedTickets, stats.closedTickets],
                         backgroundColor: [chartColors.blue, chartColors.orange, chartColors.purple, chartColors.green, chartColors.gray],
-                        borderWidth: 0,
-                        borderRadius: 5,
-                        spacing: 3
+                        borderWidth: 0, borderRadius: 5, spacing: 3
                     }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 16, font: { family: 'Inter' } } }
-                    },
-                    cutout: '65%'
-                }
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
             });
 
-            // Priority Chart
             const ctxPriority = document.getElementById('priorityChart').getContext('2d');
             if (priorityChartInstance) priorityChartInstance.destroy();
             priorityChartInstance = new Chart(ctxPriority, {
                 type: 'bar',
                 data: {
                     labels: Object.keys(stats.ticketsByPriority || {}),
-                    datasets: [{
-                        label: 'Tickets',
-                        data: Object.values(stats.ticketsByPriority || {}),
-                        backgroundColor: [chartColors.green, chartColors.blue, chartColors.orange, chartColors.red],
-                        borderWidth: 0,
-                        borderRadius: 8
-                    }]
+                    datasets: [{ label: 'Tickets', data: Object.values(stats.ticketsByPriority || {}), backgroundColor: [chartColors.green, chartColors.blue, chartColors.orange, chartColors.red], borderWidth: 0, borderRadius: 8 }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false } },
-                        x: { grid: { display: false } }
-                    }
-                }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { display: false } } } }
             });
 
-            // Department Chart
             const ctxDept = document.getElementById('departmentChart').getContext('2d');
             if (departmentChartInstance) departmentChartInstance.destroy();
             departmentChartInstance = new Chart(ctxDept, {
                 type: 'bar',
                 data: {
                     labels: Object.keys(stats.ticketsByDepartment || {}),
-                    datasets: [{
-                        label: 'Tickets',
-                        data: Object.values(stats.ticketsByDepartment || {}),
-                        backgroundColor: [chartColors.cyan, chartColors.pink, chartColors.purple, chartColors.blue, chartColors.orange],
-                        borderWidth: 0,
-                        borderRadius: 8
-                    }]
+                    datasets: [{ label: 'Tickets', data: Object.values(stats.ticketsByDepartment || {}), backgroundColor: [chartColors.cyan, chartColors.pink, chartColors.purple, chartColors.blue, chartColors.orange], borderWidth: 0, borderRadius: 8 }]
                 },
-                options: {
-                    responsive: true,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, grid: { display: false } },
-                        y: { grid: { display: false } }
-                    }
-                }
+                options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { display: false } }, y: { grid: { display: false } } } }
             });
         }
 
-        function renderUserCharts(tickets) {
+        function renderUserCharts(tickets) { /* ... same user charts code ... */
             const statusCounts = {};
             const priorityCounts = {};
             tickets.forEach(t => {
@@ -308,11 +480,7 @@
                 IN_PROGRESS: 'rgba(245, 158, 11, 0.8)',
                 ON_HOLD: 'rgba(168, 85, 247, 0.8)',
                 RESOLVED: 'rgba(16, 185, 129, 0.8)',
-                CLOSED: 'rgba(107, 114, 128, 0.8)',
-                LOW: 'rgba(16, 185, 129, 0.8)',
-                MEDIUM: 'rgba(59, 130, 246, 0.8)',
-                HIGH: 'rgba(245, 158, 11, 0.8)',
-                URGENT: 'rgba(239, 68, 68, 0.8)'
+                CLOSED: 'rgba(107, 114, 128, 0.8)'
             };
 
             const ctxStatus = document.getElementById('statusChart').getContext('2d');
@@ -321,11 +489,7 @@
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(statusCounts),
-                    datasets: [{
-                        data: Object.values(statusCounts),
-                        backgroundColor: Object.keys(statusCounts).map(k => chartColors[k] || '#999'),
-                        borderWidth: 0, borderRadius: 5, spacing: 3
-                    }]
+                    datasets: [{ data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(k => chartColors[k] || '#999'), borderWidth: 0, borderRadius: 5, spacing: 3 }]
                 },
                 options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
             });
@@ -336,28 +500,20 @@
                 type: 'bar',
                 data: {
                     labels: Object.keys(priorityCounts),
-                    datasets: [{
-                        label: 'Tickets',
-                        data: Object.values(priorityCounts),
-                        backgroundColor: Object.keys(priorityCounts).map(k => chartColors[k] || '#999'),
-                        borderWidth: 0, borderRadius: 8
-                    }]
+                    datasets: [{ label: 'Tickets', data: Object.values(priorityCounts), backgroundColor: '#8B5CF6', borderWidth: 0, borderRadius: 8 }]
                 },
-                options: {
-                    responsive: true, plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
-                }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } } }
             });
         }
 
         function renderRecentTickets(tickets) {
             const tbody = document.getElementById('recentTickets');
             if (!tickets.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:40px"><div class="empty-state"><div class="empty-icon">📭</div><h3>No tickets yet</h3><p>Create your first ticket to get started</p></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:40px"><div class="empty-state"><h3>No tickets yet</h3></div></td></tr>';
                 return;
             }
             tbody.innerHTML = tickets.map((t, i) => `
-                <tr style="animation-delay:${i * 0.1}s;cursor:pointer" onclick="window.location.href='ticket-detail.html?id=${t.id}'">
+                <tr style="cursor:pointer" onclick="window.location.href='ticket-detail.html?id=${t.id}'">
                     <td><strong>#${t.id}</strong></td>
                     <td>${t.title}</td>
                     <td>${getStatusBadge(t.status)}</td>
@@ -369,6 +525,105 @@
         }
 
         loadDashboard();
+
+        // Admin View Logic
+        window.showAdminView = function (e) {
+            if (e) e.preventDefault();
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+
+            // Update active state
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-manage-agents')?.classList.add('active');
+
+            loadUsers();
+        }
+
+        // Check URL params for view
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('view') === 'admin') {
+            showAdminView();
+        }
+
+        let departmentsCache = [];
+
+        async function loadDepartments() {
+            try {
+                departmentsCache = await API.get('/departments');
+            } catch (e) {
+                console.error('Failed to load departments', e);
+            }
+        }
+
+        async function loadUsers() {
+            if (!departmentsCache.length) await loadDepartments();
+            try {
+                const users = await API.get('/admin/users');
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td style="font-weight:bold;color:var(--primary)">#${u.id}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div class="nav-avatar" style="width:30px;height:30px;font-size:12px">${u.fullName.charAt(0)}</div>
+                                <div>
+                                    <div style="font-weight:500">${u.fullName}</div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted)">${u.department}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${u.email}</td>
+                        <td>
+                            ${u.role === 'ADMIN' ?
+                        '<span class="badge" style="background:var(--primary);color:white">ADMIN</span>' :
+                        `<label class="switch">
+                                    <input type="checkbox" ${u.role === 'AGENT' ? 'checked' : ''} onchange="toggleAgentRole(${u.id}, this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">
+                                    ${u.role === 'AGENT' ? 'Agent' : 'User'}
+                                </div>`
+                    }
+                        </td>
+                        <td>
+                            ${u.role === 'AGENT' ? `
+                                <select class="form-control" style="font-size:0.8rem;padding:6px 10px;min-width:140px" onchange="changeDepartment(${u.id}, this.value)">
+                                    <option value="">-- Select Dept --</option>
+                                    ${departmentsCache.map(d => `<option value="${d.id}" ${u.department === d.name ? 'selected' : ''}>${d.name}</option>`).join('')}
+                                </select>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                Toast.error('Failed to load users: ' + e.message);
+            }
+        }
+
+        async function toggleAgentRole(id, isAgent) {
+            const newRole = isAgent ? 'AGENT' : 'USER';
+            try {
+                await API.put(`/admin/users/${id}`, { role: newRole });
+                Toast.success(`User role updated to ${newRole}`);
+                loadUsers(); // Refresh layout
+            } catch (e) {
+                console.error(e);
+                Toast.error('Failed to update role');
+                loadUsers(); // Revert toggle on failure
+            }
+        }
+
+        async function changeDepartment(userId, deptId) {
+            if (!deptId) return;
+            try {
+                await API.put(`/admin/users/${userId}`, { departmentId: parseInt(deptId) });
+                Toast.success('Department updated successfully');
+                loadUsers();
+            } catch (e) {
+                Toast.error('Failed to update department: ' + e.message);
+                loadUsers();
+            }
+        }
     </script>
 </body>
 

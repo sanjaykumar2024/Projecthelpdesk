@@ -58,7 +58,8 @@ const API = {
                 }
             }
 
-            const data = await response.json();
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : {};
 
             if (!response.ok) {
                 throw new Error(data.message || data.error || 'Request failed');
@@ -150,76 +151,35 @@ function animateCounter(element, target, duration = 1500) {
     }, 16);
 }
 
-// ===== SIDEBAR =====
-function initSidebar() {
+// ===== NAVIGATION =====
+function initNavigation() {
     const user = Auth.getUser();
     if (!user) return;
 
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-
-    // Set user info
-    const avatarEl = sidebar.querySelector('.user-avatar');
-    const nameEl = sidebar.querySelector('.user-name');
-    const roleEl = sidebar.querySelector('.user-role');
+    // Set user info in Top Nav
+    const avatarEl = document.querySelector('.nav-avatar');
     if (avatarEl) avatarEl.textContent = user.fullName.charAt(0).toUpperCase();
-    if (nameEl) nameEl.textContent = user.fullName;
-    if (roleEl) roleEl.textContent = user.role;
 
     // Show/hide nav items based on role
     const role = user.role;
     document.querySelectorAll('[data-role]').forEach(el => {
         const roles = el.getAttribute('data-role').split(',');
         el.style.display = roles.includes(role) ? '' : 'none';
-    });
-
-    // Set active nav link
-    const currentPage = window.location.pathname.split('/').pop();
-    sidebar.querySelectorAll('.sidebar-nav a').forEach(link => {
-        const href = link.getAttribute('href');
-        if (href === currentPage || (href && currentPage.startsWith(href.split('?')[0]))) {
-            link.classList.add('active');
+        if (el.style.display === 'none') {
+            el.setAttribute('hidden', ''); // Accessibility
         }
     });
 
-    // Restore collapsed state from localStorage (desktop only)
-    const isMobile = () => window.innerWidth <= 768;
-    if (!isMobile() && localStorage.getItem('sidebar-collapsed') === 'true') {
-        document.body.classList.add('sidebar-collapsed');
-    }
-
-    // Sidebar toggle button
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            if (isMobile()) {
-                // Mobile: overlay mode
-                sidebar.classList.toggle('mobile-open');
-                if (overlay) overlay.classList.toggle('active');
-            } else {
-                // Desktop: collapse mode
-                document.body.classList.toggle('sidebar-collapsed');
-                const collapsed = document.body.classList.contains('sidebar-collapsed');
-                localStorage.setItem('sidebar-collapsed', collapsed);
-            }
-        });
-    }
-
-    // Close sidebar when clicking overlay (mobile)
-    if (overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('active');
-        });
-    }
-
-    // Handle window resize: clean up states
-    window.addEventListener('resize', () => {
-        if (!isMobile()) {
-            sidebar.classList.remove('mobile-open');
-            if (overlay) overlay.classList.remove('active');
+    // Set active nav link
+    const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        // Simple match or query param match
+        if (href === currentPage || (currentPage === '' && href === 'dashboard.html') || (href !== '#' && currentPage.startsWith(href.split('?')[0]))) {
+            // Remove active from all first
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
         }
     });
 }
@@ -255,7 +215,7 @@ function getPriorityBadge(priority) {
 // ===== PAGE INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     ThemeManager.init();
-    initSidebar();
+    initNavigation();
 
     // Page loader hide
     const loader = document.querySelector('.page-loader');

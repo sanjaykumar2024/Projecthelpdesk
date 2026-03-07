@@ -28,6 +28,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(request));
     }
 
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(
+            @Valid @RequestBody com.projecthelpdesk.projecthelpdesk.dto.VerifyOtpRequest request) {
+        return ResponseEntity.ok(authService.verifyOtp(request));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));

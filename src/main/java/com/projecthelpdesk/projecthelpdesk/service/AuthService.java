@@ -21,13 +21,16 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final org.springframework.mail.javamail.JavaMailSender mailSender;
 
     public AuthService(UserRepository userRepository, RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+            PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+            org.springframework.mail.javamail.JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.mailSender = mailSender;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -35,12 +38,8 @@ public class AuthService {
             throw new BadRequestException("Email already registered");
         }
 
-        ERole eRole;
-        try {
-            eRole = ERole.valueOf(request.getRole().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid role: " + request.getRole());
-        }
+        // Force all new registrations to be USER
+        ERole eRole = ERole.USER;
 
         Role role = roleRepository.findByRoleName(eRole)
                 .orElseGet(() -> {
@@ -53,6 +52,66 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
+
+        // Generate OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+        user.setOtp(otp);
+        user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(10));
+        user.setEnabled(false); // User is disabled until OTP verification
+
+        userRepository.save(user);
+
+        // Send OTP via Email (try-catch to avoid blocking registration if mail fails,
+        // but log it)
+        sendOtpEmail(user.getEmail(), otp);
+
+        // Return empty token or specific response indicating OTP sent
+        // For now, we return null token to indicate "Action Required" on frontend
+        return new AuthResponse(null, user.getId(), user.getEmail(), user.getFullName(),
+                user.getRole().getRoleName().name());
+    }
+
+    private void sendOtpEmail(String to, String otp) {
+        System.out.println("==================================================");
+        System.out.println("SENDING OTP TO: " + to);
+        System.out.println("OTP CODE: " + otp);
+        System.out.println("==================================================");
+
+        try {
+            org.springframework.mail.SimpleMailMessage message = new org.springframework.mail.SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("HelpDesk Registration OTP");
+            message.setText("Your OTP for registration is: " + otp + "\n\nThis code expires in 10 minutes.");
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email: " + e.getMessage());
+            // Proceeding anyway since we logged it to console for dev/test
+        }
+    }
+
+    public AuthResponse verifyOtp(com.projecthelpdesk.projecthelpdesk.dto.VerifyOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        if (user.isEnabled()) {
+            // Already enabled, just login
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
+            return new AuthResponse(token, user.getId(), user.getEmail(),
+                    user.getFullName(), user.getRole().getRoleName().name());
+        }
+
+        if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
+            throw new BadRequestException("Invalid OTP");
+        }
+
+        if (user.getOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
+            throw new BadRequestException("OTP has expired");
+        }
+
+        // OTP Valid
+        user.setEnabled(true);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
@@ -63,6 +122,10 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+
+        if (!user.isEnabled()) {
+            throw new BadRequestException("Account not verified. Please verify your email.");
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Invalid email or password");

@@ -13,48 +13,36 @@
     <div class="page-loader">
         <div class="loader-spinner"></div>
     </div>
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo">🎫 HelpDesk</a>
 
-    <div class="app-layout">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">🎫 HelpDesk</div>
-                <div class="logo-sub">Ticketing System</div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="tickets.html" class="nav-link">My Tickets</a>
+                <a href="create-ticket.html" class="nav-link">New Ticket</a>
+                <a href="tickets.html?view=all" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="dashboard.html?view=admin" class="nav-link" data-role="ADMIN" style="display:none">Manage
+                    Agents</a>
             </div>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.html" data-tooltip="Dashboard"><span class="nav-icon">📊</span><span
-                            class="nav-text">Dashboard</span></a></li>
-                <li><a href="tickets.html" data-tooltip="Tickets"><span class="nav-icon">🎫</span><span
-                            class="nav-text">Tickets</span></a></li>
-                <li><a href="create-ticket.html" data-tooltip="Create Ticket"><span class="nav-icon">➕</span><span
-                            class="nav-text">Create Ticket</span></a></li>
-                <li data-role="ADMIN"><a href="tickets.html?view=all" data-tooltip="All Tickets"><span
-                            class="nav-icon">📋</span><span class="nav-text">All Tickets</span></a>
-                </li>
-            </ul>
-            <div class="sidebar-user">
-                <div class="user-avatar">U</div>
-                <div class="user-info">
-                    <div class="user-name">User</div>
-                    <div class="user-role">Role</div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
                 </div>
-                <button onclick="Auth.logout()" class="logout-btn" title="Logout">🚪</button>
             </div>
-        </aside>
+        </div>
+    </nav>
 
+    <div class="app-layout" style="display:block">
         <main class="main-content">
-            <div class="top-bar">
-                <div class="top-bar-left">
-                    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
-                        <span class="toggle-icon">☰</span>
-                    </button>
-                    <h1 id="ticketTitle">Ticket Detail</h1>
-                </div>
-                <div class="top-bar-actions">
-                    <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
-                    <a href="tickets.html" class="btn btn-outline btn-sm">← Back to Tickets</a>
-                </div>
+            <div class="mb-3 d-flex justify-between items-center">
+                <h1 id="ticketTitle">Ticket Detail</h1>
+                <a href="tickets.html" class="btn btn-outline btn-sm">← Back to Tickets</a>
             </div>
 
             <!-- Ticket Info -->
@@ -81,7 +69,15 @@
                                 <textarea class="form-control" id="commentInput" placeholder="Write a comment..."
                                     rows="3"></textarea>
                             </div>
-                            <button class="btn btn-primary btn-sm" onclick="submitComment()">💬 Add Comment</button>
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                                <button class="btn btn-primary btn-sm" onclick="submitComment()">💬 Add Comment</button>
+                                <button class="btn btn-sm" id="aiBtn" onclick="generateAIComment()"
+                                    style="background:linear-gradient(135deg,#8B5CF6,#EC4899);color:white;border:none;position:relative;overflow:hidden">
+                                    ✨ Generate AI Comment
+                                    <span id="aiShimmer"
+                                        style="position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);display:none"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -267,6 +263,81 @@
             } catch (error) {
                 Toast.error('Failed to add comment');
             }
+        }
+
+        // ===== AI COMMENT GENERATOR =====
+        const aiTemplates = {
+            OPEN: [
+                "Thank you for submitting this ticket. We've received your request and a team member will be reviewing it shortly. In the meantime, please provide any additional details that might help us resolve this faster.",
+                "Hi there! We've logged your issue and it's now in our queue. We aim to provide an initial response within 24 hours. If this is urgent, please flag the priority accordingly.",
+                "Your ticket has been received and is currently open for review. Our support team will analyze the issue and get back to you with next steps."
+            ],
+            IN_PROGRESS: [
+                "We're actively working on this issue. Our team is investigating the root cause and we'll update you as soon as we have more information.",
+                "This ticket is currently being handled by our support team. We've identified the area of concern and are working on a resolution. We'll keep you posted on our progress.",
+                "Update: Our team has started working on this. Initial analysis is underway. We appreciate your patience while we work towards a solution."
+            ],
+            ON_HOLD: [
+                "This ticket has been placed on hold pending additional information. Could you please provide more details so we can continue? Specifically, we need clarification on the steps to reproduce the issue.",
+                "We're temporarily pausing work on this ticket. We need some additional context from your end. Please reply with the requested details and we'll resume immediately.",
+                "This request is on hold as we're awaiting a dependency to be resolved. We'll resume work as soon as the blocker is cleared and will notify you of any updates."
+            ],
+            RESOLVED: [
+                "Great news! This issue has been resolved. The fix has been applied and should be effective immediately. Please verify on your end and let us know if everything looks good.",
+                "We've successfully resolved this ticket. The solution involved addressing the reported concern directly. If you experience any further issues, feel free to reopen this ticket.",
+                "This ticket has been marked as resolved. We've implemented the necessary changes to address your request. Please take a moment to confirm and provide any feedback."
+            ],
+            CLOSED: [
+                "This ticket has been closed. Thank you for your patience throughout the resolution process. If you need further assistance, don't hesitate to open a new ticket.",
+                "Ticket closed. We hope the resolution met your expectations. Your feedback helps us improve our service — consider leaving a rating if you haven't already."
+            ]
+        };
+
+        const priorityPrefixes = {
+            URGENT: "⚡ URGENT: ",
+            HIGH: "🔴 High Priority — ",
+            MEDIUM: "",
+            LOW: ""
+        };
+
+        function generateAIComment() {
+            if (!currentTicket) { Toast.warning('Ticket not loaded yet'); return; }
+
+            const btn = document.getElementById('aiBtn');
+            const shimmer = document.getElementById('aiShimmer');
+            const textarea = document.getElementById('commentInput');
+
+            // Show loading animation
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            shimmer.style.display = 'block';
+            shimmer.style.animation = 'shimmer 1s ease-in-out infinite';
+
+            // Pick a random template based on status
+            const templates = aiTemplates[currentTicket.status] || aiTemplates.OPEN;
+            let comment = templates[Math.floor(Math.random() * templates.length)];
+
+            // Add priority prefix for urgent/high
+            const prefix = priorityPrefixes[currentTicket.priority] || '';
+            if (prefix) comment = prefix + comment;
+
+            // Simulate typing effect
+            textarea.value = '';
+            let i = 0;
+            const typeSpeed = 12;
+            function typeChar() {
+                if (i < comment.length) {
+                    textarea.value += comment.charAt(i);
+                    i++;
+                    setTimeout(typeChar, typeSpeed);
+                } else {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    shimmer.style.display = 'none';
+                    Toast.success('AI comment generated! Feel free to edit before submitting.');
+                }
+            }
+            setTimeout(typeChar, 300);
         }
 
         async function updateStatus() {
