@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Authenticating...</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Completing sign-in, please wait...</p>
+    <script>
+        (function () {
+            // Parse the URL hash for id_token (Google returns it as a fragment)
+            const hash = window.location.hash.substring(1);
+            const params = {};
+            hash.split('&').forEach(part => {
+                const [key, value] = part.split('=');
+                if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+            });
+
+            const idToken = params['id_token'];
+
+            if (idToken && window.opener) {
+                // Send the token back to the parent window
+                window.opener.postMessage({ type: 'GOOGLE_AUTH', credential: idToken }, window.location.origin);
+                window.close();
+            } else {
+                // Fallback: show error and close after a moment
+                document.querySelector('p').textContent = 'Authentication failed. This window will close shortly.';
+                setTimeout(() => window.close(), 2000);
+            }
+        })();
+    </script>
+</body>
+
+</html>

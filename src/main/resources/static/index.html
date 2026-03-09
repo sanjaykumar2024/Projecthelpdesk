@@ -9,8 +9,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- Google Fonts for the new design -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- No GIS script needed for popup OAuth2 flow -->
 </head>
 
 <body>
@@ -63,7 +62,7 @@
                 <!-- Tab Switcher (Visual only for now, can be functional if needed) -->
                 <div class="auth-tabs">
                     <button class="auth-tab active">Sign In</button>
-                    <a href="/register.html" class="auth-tab">Sign Up</a>
+                    <a href="/register" class="auth-tab">Sign Up</a>
                 </div>
 
                 <form id="loginForm" class="modern-form">
@@ -108,7 +107,7 @@
                 </button>
 
                 <div class="mobile-footer">
-                    Don't have an account? <a href="/register.html">Sign Up here</a>
+                    Don't have an account? <a href="/register">Sign Up here</a>
                 </div>
             </div>
         </div>
@@ -120,7 +119,7 @@
     <script>
         // Redirect if already logged in
         if (Auth.isLoggedIn()) {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
         }
 
         // --- Normal email/password login ---
@@ -139,7 +138,7 @@
 
                 Auth.setAuth(data);
                 Toast.success('Welcome back, ' + data.fullName + '!');
-                setTimeout(() => window.location.href = '/dashboard.html', 800);
+                setTimeout(() => window.location.href = '/dashboard', 800);
             } catch (error) {
                 Toast.error(error.message || 'Invalid email or password');
                 btn.textContent = originalText;
@@ -147,37 +146,47 @@
             }
         });
 
-        // --- Google Sign-In ---
-        window.addEventListener('load', () => {
-            if (typeof google !== 'undefined' && google.accounts) {
-                google.accounts.id.initialize({
-                    client_id: '140949296868-euuvilv1i88lfd8o2so3dmajj9k065k3.apps.googleusercontent.com',
-                    callback: handleGoogleCredential
-                });
-            }
-        });
+        // --- Google Sign-In (Popup OAuth2 Flow) ---
+        const GOOGLE_CLIENT_ID = '140949296868-euuvilv1i88lfd8o2so3dmajj9k065k3.apps.googleusercontent.com';
+        const REDIRECT_URI = window.location.origin + '/oauth2callback.html';
 
-        document.getElementById('customGoogleBtn').addEventListener('click', () => {
-            if (typeof google !== 'undefined' && google.accounts) {
-                google.accounts.id.prompt();
-            } else {
-                Toast.error('Google Sign-In is loading, please try again.');
+        function openGoogleSignIn() {
+            const params = new URLSearchParams({
+                client_id: GOOGLE_CLIENT_ID,
+                redirect_uri: REDIRECT_URI,
+                response_type: 'id_token',
+                scope: 'openid email profile',
+                nonce: Math.random().toString(36).substring(2)
+            });
+            const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+            const popup = window.open(authUrl, 'GoogleSignIn', 'width=500,height=600,scrollbars=yes,resizable=yes');
+            if (!popup) {
+                Toast.error('Popup blocked! Please allow popups for this site and try again.');
             }
-        });
+        }
 
-        async function handleGoogleCredential(response) {
+        // Listen for the token posted back from oauth2callback.html
+        window.addEventListener('message', async (event) => {
+            if (event.origin !== window.location.origin) return;
+            if (!event.data || event.data.type !== 'GOOGLE_AUTH') return;
+
+            const credential = event.data.credential;
+            if (!credential) {
+                Toast.error('Google sign-in failed: no credential received.');
+                return;
+            }
+
             try {
-                const data = await API.post('/auth/google', {
-                    credential: response.credential
-                });
-
+                const data = await API.post('/auth/google', { credential });
                 Auth.setAuth(data);
                 Toast.success('Welcome, ' + data.fullName + '!');
-                setTimeout(() => window.location.href = '/dashboard.html', 800);
+                setTimeout(() => window.location.href = '/dashboard', 800);
             } catch (error) {
                 Toast.error(error.message || 'Google sign-in failed');
             }
-        }
+        });
+
+        document.getElementById('customGoogleBtn').addEventListener('click', openGoogleSignIn);
     </script>
 </body>
 

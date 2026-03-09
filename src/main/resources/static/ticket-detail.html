@@ -16,15 +16,14 @@
     <!-- TOP NAVIGATION -->
     <nav class="top-nav">
         <div class="nav-container">
-            <a href="dashboard.html" class="nav-logo">🎫 HelpDesk</a>
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
 
             <div class="nav-links">
-                <a href="dashboard.html" class="nav-link">Dashboard</a>
-                <a href="tickets.html" class="nav-link">My Tickets</a>
-                <a href="create-ticket.html" class="nav-link">New Ticket</a>
-                <a href="tickets.html?view=all" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
-                <a href="dashboard.html?view=admin" class="nav-link" data-role="ADMIN" style="display:none">Manage
-                    Agents</a>
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
 
             <div class="nav-actions">
@@ -42,7 +41,7 @@
         <main class="main-content">
             <div class="mb-3 d-flex justify-between items-center">
                 <h1 id="ticketTitle">Ticket Detail</h1>
-                <a href="tickets.html" class="btn btn-outline btn-sm">← Back to Tickets</a>
+                <a href="/tickets" class="btn btn-outline btn-sm">← Back to Tickets</a>
             </div>
 
             <!-- Ticket Info -->
@@ -159,7 +158,7 @@
         if (!Auth.requireAuth()) throw new Error('Not authenticated');
 
         const ticketId = new URLSearchParams(window.location.search).get('id');
-        if (!ticketId) { window.location.href = 'tickets.html'; }
+        if (!ticketId) { window.location.href = '/tickets'; }
 
         let currentTicket = null;
 

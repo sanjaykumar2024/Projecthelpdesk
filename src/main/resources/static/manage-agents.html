@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Agents | Helpdesk</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Subtle dashboard enhancements */
+        .welcome-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.07) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(6, 182, 212, 0.03) 100%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 32px 36px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeInDown 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .welcome-left h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-left p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .welcome-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .role-pill.admin {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
+
+        .role-pill.agent {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .role-pill.user {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3B82F6;
+        }
+
+        .welcome-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .welcome-right {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-right .btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Stat card colored top borders on hover */
+        .stat-card:nth-child(1):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #8B5CF6 inset;
+        }
+
+        .stat-card:nth-child(2):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #3B82F6 inset;
+        }
+
+        .stat-card:nth-child(3):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #F59E0B inset;
+        }
+
+        .stat-card:nth-child(4):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #A855F7 inset;
+        }
+
+        .stat-card:nth-child(5):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #10B981 inset;
+        }
+
+        .stat-card:nth-child(6):hover {
+            box-shadow: var(--shadow-lg), 0 -3px 0 0 #6B7280 inset;
+        }
+
+        /* Chart card subtle header bar */
+        .chart-card {
+            position: relative;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 24px;
+            right: 24px;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 0 0 4px 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Recent tickets row highlight */
+        .data-table tr:hover td {
+            background: rgba(139, 92, 246, 0.04);
+        }
+
+        @media (max-width: 768px) {
+            .welcome-banner {
+                flex-direction: column;
+                text-align: center;
+                padding: 24px 20px;
+            }
+
+            .welcome-meta {
+                justify-content: center;
+            }
+
+            .welcome-right {
+                margin-top: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link active" data-role="ADMIN" style="display:none">Manage
+                    Agents</a>
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout" style="display:block">
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- DASHBOARD VIEW REMOVED -->
+
+            <!-- ADMIN VIEW (Manage Agents) -->
+            <div id="admin-view" style="display: block; animation: fadeIn 0.4s ease;">
+                <div class="text-center mb-3">
+                    <h1 style="font-size:2rem">Manage Agents</h1>
+                    <p style="color:var(--text-secondary)">Manage user roles and department assignments.</p>
+                </div>
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Registered Users</h2>
+                        <button class="btn btn-sm btn-outline" onclick="loadUsers()">Refresh</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        // Navigation Init
+        const user = Auth.getUser();
+        if (user) {
+            document.querySelector('.nav-avatar').textContent = user.fullName.charAt(0);
+            if (user.role === 'ADMIN') {
+                document.querySelectorAll('[data-role="ADMIN"]').forEach(el => el.style.display = 'block');
+            }
+
+            loadUsers();
+
+            let departmentsCache = [];
+
+            async function loadDepartments() {
+                try {
+                    departmentsCache = await API.get('/departments');
+                } catch (e) {
+                    console.error('Failed to load departments', e);
+                }
+            }
+
+            async function loadUsers() {
+                if (!departmentsCache.length) await loadDepartments();
+                try {
+                    const users = await API.get('/admin/users');
+                    const tbody = document.getElementById('usersTableBody');
+                    tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td style="font-weight:bold;color:var(--primary)">#${u.id}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div class="nav-avatar" style="width:30px;height:30px;font-size:12px">${u.fullName.charAt(0)}</div>
+                                <div>
+                                    <div style="font-weight:500">${u.fullName}</div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted)">${u.department}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${u.email}</td>
+                        <td>
+                            ${u.role === 'ADMIN' ?
+                            '<span class="badge" style="background:var(--primary);color:white">ADMIN</span>' :
+                            `<label class="switch">
+                                    <input type="checkbox" ${u.role === 'AGENT' ? 'checked' : ''} onchange="toggleAgentRole(${u.id}, this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">
+                                    ${u.role === 'AGENT' ? 'Agent' : 'User'}
+                                </div>`
+                        }
+                        </td>
+                        <td>
+                            ${u.role === 'AGENT' ? `
+                                <select class="form-control" style="font-size:0.8rem;padding:6px 10px;min-width:140px" onchange="changeDepartment(${u.id}, this.value)">
+                                    <option value="">-- Select Dept --</option>
+                                    ${departmentsCache.map(d => `<option value="${d.id}" ${u.department === d.name ? 'selected' : ''}>${d.name}</option>`).join('')}
+                                </select>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+                } catch (e) {
+                    Toast.error('Failed to load users: ' + e.message);
+                }
+            }
+
+            async function toggleAgentRole(id, isAgent) {
+                const newRole = isAgent ? 'AGENT' : 'USER';
+                try {
+                    await API.put(`/admin/users/${id}`, { role: newRole });
+                    Toast.success(`User role updated to ${newRole}`);
+                    loadUsers(); // Refresh layout
+                } catch (e) {
+                    console.error(e);
+                    Toast.error('Failed to update role');
+                    loadUsers(); // Revert toggle on failure
+                }
+            }
+
+            async function changeDepartment(userId, deptId) {
+                if (!deptId) return;
+                try {
+                    await API.put(`/admin/users/${userId}`, { departmentId: parseInt(deptId) });
+                    Toast.success('Department updated successfully');
+                    loadUsers();
+                } catch (e) {
+                    Toast.error('Failed to update department: ' + e.message);
+                    loadUsers();
+                }
+            }
+
+        }
+    </script>
+</body>
+
+</html>

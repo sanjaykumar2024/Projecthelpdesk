@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tickets | Helpdesk</title>
+    <title>All Tickets | Helpdesk</title>
     <meta name="description" content="View and manage your helpdesk tickets">
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -20,9 +20,9 @@
 
             <div class="nav-links">
                 <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/tickets" class="nav-link active">My Tickets</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
-                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/all-tickets" class="nav-link active" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
 
@@ -88,8 +88,12 @@
 
         async function loadTickets() {
             try {
-                allTickets = await API.get('/tickets');
-                renderTickets(allTickets);
+                if (Auth.getRole() === 'ADMIN') {
+                    allTickets = await API.get('/tickets/all');
+                    renderTickets(allTickets);
+                } else {
+                    window.location.href = '/tickets'; // Redirect non-admins
+                }
             } catch (error) {
                 Toast.error('Failed to load tickets');
             }

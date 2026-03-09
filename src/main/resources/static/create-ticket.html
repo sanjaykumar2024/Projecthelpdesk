@@ -16,14 +16,14 @@
     <!-- TOP NAVIGATION -->
     <nav class="top-nav">
         <div class="nav-container">
-            <a href="dashboard.html" class="nav-logo">🎫 HelpDesk</a>
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
 
             <div class="nav-links">
-                <a href="dashboard.html" class="nav-link">Dashboard</a>
-                <a href="tickets.html" class="nav-link">My Tickets</a>
-                <a href="create-ticket.html" class="nav-link active">New Ticket</a>
-                <a href="tickets.html?view=all" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
-                <a href="dashboard.html?view=admin" class="nav-link" data-role="ADMIN" style="display:none">Manage
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link active">New Ticket</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage
                     Agents</a>
             </div>
 
@@ -122,7 +122,7 @@
                 });
 
                 Toast.success('Ticket #' + ticket.id + ' created successfully!');
-                setTimeout(() => window.location.href = 'ticket-detail.html?id=' + ticket.id, 1000);
+                setTimeout(() => window.location.href = '/ticket-detail?id=' + ticket.id, 1000);
             } catch (error) {
                 Toast.error(error.message || 'Failed to create ticket');
                 btn.textContent = '🎫 Submit Ticket';

@@ -18,7 +18,7 @@ const Auth = {
     logout: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/index.html';
+        window.location.href = '/';
     },
     isLoggedIn: () => !!localStorage.getItem('token'),
     getRole: () => {
@@ -27,7 +27,7 @@ const Auth = {
     },
     requireAuth: () => {
         if (!Auth.isLoggedIn()) {
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
         return true;
@@ -170,14 +170,13 @@ function initNavigation() {
         }
     });
 
-    // Set active nav link
-    const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+    // Set active nav link — works with both clean URLs (/dashboard) and .html paths
+    const currentPath = window.location.pathname; // e.g. '/dashboard' or '/tickets'
     document.querySelectorAll('.nav-link').forEach(link => {
         const href = link.getAttribute('href');
-        if (!href) return;
-        // Simple match or query param match
-        if (href === currentPage || (currentPage === '' && href === 'dashboard.html') || (href !== '#' && currentPage.startsWith(href.split('?')[0]))) {
-            // Remove active from all first
+        if (!href || href === '#') return;
+        const hrefPath = href.split('?')[0]; // strip query params
+        if (currentPath === hrefPath || (currentPath === '/' && hrefPath === '/dashboard')) {
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
         }
