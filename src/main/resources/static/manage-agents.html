@@ -251,25 +251,24 @@
             if (user.role === 'ADMIN') {
                 document.querySelectorAll('[data-role="ADMIN"]').forEach(el => el.style.display = 'block');
             }
+        }
 
-            loadUsers();
+        let departmentsCache = [];
 
-            let departmentsCache = [];
-
-            async function loadDepartments() {
-                try {
-                    departmentsCache = await API.get('/departments');
-                } catch (e) {
-                    console.error('Failed to load departments', e);
-                }
+        async function loadDepartments() {
+            try {
+                departmentsCache = await API.get('/departments');
+            } catch (e) {
+                console.error('Failed to load departments', e);
             }
+        }
 
-            async function loadUsers() {
-                if (!departmentsCache.length) await loadDepartments();
-                try {
-                    const users = await API.get('/admin/users');
-                    const tbody = document.getElementById('usersTableBody');
-                    tbody.innerHTML = users.map(u => `
+        async function loadUsers() {
+            if (!departmentsCache.length) await loadDepartments();
+            try {
+                const users = await API.get('/admin/users');
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = users.map(u => `
                     <tr>
                         <td style="font-weight:bold;color:var(--primary)">#${u.id}</td>
                         <td>
@@ -284,15 +283,15 @@
                         <td>${u.email}</td>
                         <td>
                             ${u.role === 'ADMIN' ?
-                            '<span class="badge" style="background:var(--primary);color:white">ADMIN</span>' :
-                            `<label class="switch">
+                        '<span class="badge" style="background:var(--primary);color:white">ADMIN</span>' :
+                        `<label class="switch">
                                     <input type="checkbox" ${u.role === 'AGENT' ? 'checked' : ''} onchange="toggleAgentRole(${u.id}, this.checked)">
                                     <span class="slider"></span>
                                 </label>
                                 <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">
                                     ${u.role === 'AGENT' ? 'Agent' : 'User'}
                                 </div>`
-                        }
+                    }
                         </td>
                         <td>
                             ${u.role === 'AGENT' ? `
@@ -304,37 +303,37 @@
                         </td>
                     </tr>
                 `).join('');
-                } catch (e) {
-                    Toast.error('Failed to load users: ' + e.message);
-                }
+            } catch (e) {
+                Toast.error('Failed to load users: ' + e.message);
             }
-
-            async function toggleAgentRole(id, isAgent) {
-                const newRole = isAgent ? 'AGENT' : 'USER';
-                try {
-                    await API.put(`/admin/users/${id}`, { role: newRole });
-                    Toast.success(`User role updated to ${newRole}`);
-                    loadUsers(); // Refresh layout
-                } catch (e) {
-                    console.error(e);
-                    Toast.error('Failed to update role');
-                    loadUsers(); // Revert toggle on failure
-                }
-            }
-
-            async function changeDepartment(userId, deptId) {
-                if (!deptId) return;
-                try {
-                    await API.put(`/admin/users/${userId}`, { departmentId: parseInt(deptId) });
-                    Toast.success('Department updated successfully');
-                    loadUsers();
-                } catch (e) {
-                    Toast.error('Failed to update department: ' + e.message);
-                    loadUsers();
-                }
-            }
-
         }
+
+        async function toggleAgentRole(id, isAgent) {
+            const newRole = isAgent ? 'AGENT' : 'USER';
+            try {
+                await API.put(`/admin/users/${id}`, { role: newRole });
+                Toast.success(`User role updated to ${newRole}`);
+                loadUsers(); // Refresh layout
+            } catch (e) {
+                console.error(e);
+                Toast.error('Failed to update role');
+                loadUsers(); // Revert toggle on failure
+            }
+        }
+
+        async function changeDepartment(userId, deptId) {
+            if (!deptId) return;
+            try {
+                await API.put(`/admin/users/${userId}`, { departmentId: parseInt(deptId) });
+                Toast.success('Department updated successfully');
+                loadUsers();
+            } catch (e) {
+                Toast.error('Failed to update department: ' + e.message);
+                loadUsers();
+            }
+        }
+
+        loadUsers();
     </script>
 </body>
 
