@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Tickets | Helpdesk</title>
-    <meta name="description" content="View and manage your helpdesk tickets">
+    <title>Department Tickets | Helpdesk</title>
+    <meta name="description" content="View and manage tickets in your department">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 
@@ -22,8 +22,9 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
-                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
-                <a href="/all-tickets" class="nav-link active" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/department-tickets" class="nav-link active" data-role="AGENT" style="display:none">Dept
+                    Tickets</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
 
@@ -41,7 +42,7 @@
     <div class="app-layout" style="display:block">
         <main class="main-content" style="margin-left:0;padding-top:20px;max-width:1200px;margin:0 auto">
             <div class="mb-3 d-flex justify-between items-center">
-                <h1>🎫 Tickets</h1>
+                <h1>🏢 Department Tickets</h1>
                 <a href="/create-ticket" class="btn btn-primary">➕ New Ticket</a>
             </div>
 
@@ -62,9 +63,7 @@
                     <option value="HIGH">High</option>
                     <option value="URGENT">Urgent</option>
                 </select>
-                <select class="form-control" id="filterDepartment">
-                    <option value="">All Departments</option>
-                </select>
+                <!-- Department filter removed since it's already filtered by department -->
                 <input type="date" class="form-control" id="filterStartDate" placeholder="Start Date">
                 <input type="date" class="form-control" id="filterEndDate" placeholder="End Date">
                 <button class="btn btn-primary btn-sm" onclick="applyFilters()">🔍 Filter</button>
@@ -89,29 +88,18 @@
 
         async function loadTickets() {
             try {
-                if (Auth.getRole() === 'ADMIN') {
-                    allTickets = await API.get('/tickets/all');
+                if (Auth.getRole() === 'AGENT' || Auth.getRole() === 'ADMIN') {
+                    allTickets = await API.get('/tickets/department');
                     renderTickets(allTickets);
                 } else {
-                    window.location.href = '/tickets'; // Redirect non-admins
+                    window.location.href = '/tickets'; // Redirect users
                 }
             } catch (error) {
                 Toast.error('Failed to load tickets');
             }
         }
 
-        async function loadDepartments() {
-            try {
-                const depts = await API.get('/departments');
-                const select = document.getElementById('filterDepartment');
-                depts.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d.id;
-                    opt.textContent = d.name;
-                    select.appendChild(opt);
-                });
-            } catch (e) { }
-        }
+        // Removed loadDepartments as it's not needed for filtering here
 
         function renderTickets(tickets) {
             const grid = document.getElementById('ticketsGrid');
@@ -144,14 +132,12 @@
         async function applyFilters() {
             const status = document.getElementById('filterStatus').value;
             const priority = document.getElementById('filterPriority').value;
-            const deptId = document.getElementById('filterDepartment').value;
             const startDate = document.getElementById('filterStartDate').value;
             const endDate = document.getElementById('filterEndDate').value;
 
             let params = [];
             if (status) params.push(`status=${status}`);
             if (priority) params.push(`priority=${priority}`);
-            if (deptId) params.push(`departmentId=${deptId}`);
             if (startDate) params.push(`startDate=${startDate}T00:00:00`);
             if (endDate) params.push(`endDate=${endDate}T23:59:59`);
 
@@ -172,14 +158,12 @@
         function clearFilters() {
             document.getElementById('filterStatus').value = '';
             document.getElementById('filterPriority').value = '';
-            document.getElementById('filterDepartment').value = '';
             document.getElementById('filterStartDate').value = '';
             document.getElementById('filterEndDate').value = '';
             renderTickets(allTickets);
         }
 
         loadTickets();
-        loadDepartments();
     </script>
 </body>
 

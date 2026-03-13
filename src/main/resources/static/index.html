@@ -156,6 +156,7 @@
                 redirect_uri: REDIRECT_URI,
                 response_type: 'id_token',
                 scope: 'openid email profile',
+                prompt: 'select_account',
                 nonce: Math.random().toString(36).substring(2)
             });
             const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();

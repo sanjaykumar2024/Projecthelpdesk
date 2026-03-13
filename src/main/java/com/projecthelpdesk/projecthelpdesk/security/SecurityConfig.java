@@ -43,7 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         // Clean URL page routes (no .html extension)
                         .requestMatchers("/login", "/register", "/dashboard", "/tickets",
-                                "/create-ticket", "/ticket-detail", "/oauth2callback", "/manage-agents", "/all-tickets")
+                                "/create-ticket", "/ticket-detail", "/oauth2callback", "/manage-agents", "/all-tickets", "/department-tickets")
                         .permitAll()
                         .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "AGENT")
                         .requestMatchers("/api/tickets/all").hasRole("ADMIN")

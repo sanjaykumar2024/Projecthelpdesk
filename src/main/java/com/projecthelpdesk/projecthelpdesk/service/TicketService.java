@@ -78,6 +78,27 @@ public class TicketService {
         return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    public List<TicketResponse> getDepartmentTickets(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!"AGENT".equals(user.getRole().getRoleName().name())
+                && !"ADMIN".equals(user.getRole().getRoleName().name())) {
+            throw new BadRequestException("Only agents and admins can view department tickets");
+        }
+
+        if ("ADMIN".equals(user.getRole().getRoleName().name())) {
+            return ticketRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
+        }
+
+        if (user.getDepartment() == null) {
+            throw new BadRequestException("Agent is not assigned to any department");
+        }
+
+        List<Ticket> tickets = ticketRepository.findByDepartmentId(user.getDepartment().getId());
+        return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     public List<TicketResponse> getAllTickets() {
         return ticketRepository.findAll().stream()
                 .map(this::mapToResponse).collect(Collectors.toList());
@@ -129,6 +150,14 @@ public class TicketService {
         ticket = ticketRepository.save(ticket);
         emailService.sendTicketAssignedEmail(ticket);
         return mapToResponse(ticket);
+    }
+
+    @Transactional
+    public TicketResponse assignToSelf(Long ticketId, String email) {
+        User agent = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return assignAgent(ticketId, agent.getId());
     }
 
     public List<TicketResponse> filterTickets(String status, String priority,

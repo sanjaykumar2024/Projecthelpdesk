@@ -22,6 +22,7 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
                 <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
@@ -106,6 +107,13 @@
                                 placeholder="Enter agent user ID">
                             <button class="btn btn-success btn-sm mt-1 w-100" onclick="assignAgent()">Assign
                                 Agent</button>
+                        </div>
+
+                        <div class="form-group mt-2" id="assignToMeGroup" style="display:none">
+                            <button class="btn btn-sm w-100" onclick="assignToMe()"
+                                style="background:linear-gradient(135deg,#10B981,#34D399);color:white;border:none;">
+                                🙋 Assign to Me
+                            </button>
                         </div>
                     </div>
 
@@ -206,15 +214,23 @@
 
         function setupActions() {
             const role = Auth.getRole();
+            const user = Auth.getUser();
+
             if (role === 'ADMIN' || role === 'AGENT') {
                 document.getElementById('actionsCard').style.display = 'block';
                 if (role === 'ADMIN') {
                     document.getElementById('assignGroup').style.display = 'block';
                 }
+
+                // Agents can assign unassigned tickets to themselves, or override assignments if needed in their dept
+                if (role === 'AGENT' && currentTicket.assignedAgentId !== user.userId) {
+                    document.getElementById('assignToMeGroup').style.display = 'block';
+                } else if (role === 'AGENT' && currentTicket.assignedAgentId === user.userId) {
+                    document.getElementById('assignToMeGroup').style.display = 'none';
+                }
             }
 
             // Show feedback button for ticket owner when resolved/closed
-            const user = Auth.getUser();
             if ((currentTicket.status === 'RESOLVED' || currentTicket.status === 'CLOSED')
                 && currentTicket.creatorId === user.userId && !currentTicket.hasFeedback) {
                 document.getElementById('feedbackCard').style.display = 'block';
@@ -360,6 +376,16 @@
                 loadTicket();
             } catch (error) {
                 Toast.error('Failed to assign agent');
+            }
+        }
+
+        async function assignToMe() {
+            try {
+                await API.patch(`/tickets/${ticketId}/assign-self`);
+                Toast.success('Ticket assigned to you successfully!');
+                loadTicket();
+            } catch (error) {
+                Toast.error('Failed to assign ticket to yourself');
             }
         }
 

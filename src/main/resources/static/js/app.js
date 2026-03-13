@@ -158,7 +158,19 @@ function initNavigation() {
 
     // Set user info in Top Nav
     const avatarEl = document.querySelector('.nav-avatar');
-    if (avatarEl) avatarEl.textContent = user.fullName.charAt(0).toUpperCase();
+    if (avatarEl) {
+        avatarEl.textContent = user.fullName.charAt(0).toUpperCase();
+        
+        // Display user ID for easier assignment
+        const navUser = document.querySelector('.nav-user');
+        if (navUser && !document.querySelector('.nav-user-id')) {
+            const idBadge = document.createElement('div');
+            idBadge.className = 'nav-user-id';
+            idBadge.style.cssText = 'font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-right: 8px; background: rgba(139, 92, 246, 0.1); padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.2); display: flex; align-items: center; gap: 4px;';
+            idBadge.innerHTML = `<span style="opacity:0.7">ID:</span> <span>${user.userId}</span>`;
+            navUser.insertBefore(idBadge, avatarEl);
+        }
+    }
 
     // Show/hide nav items based on role
     const role = user.role;

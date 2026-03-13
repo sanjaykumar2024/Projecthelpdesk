@@ -54,4 +54,9 @@ public class PageController {
     public String allTickets() {
         return "forward:/all-tickets.html";
     }
+
+    @GetMapping("/department-tickets")
+    public String departmentTickets() {
+        return "forward:/department-tickets.html";
+    }
 }

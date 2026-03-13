@@ -52,6 +52,11 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
+    @GetMapping("/department")
+    public ResponseEntity<List<TicketResponse>> getDepartmentTickets(Authentication auth) {
+        return ResponseEntity.ok(ticketService.getDepartmentTickets(auth.getName()));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<TicketResponse> updateStatus(@PathVariable Long id,
             @RequestParam String status) {
@@ -62,6 +67,11 @@ public class TicketController {
     public ResponseEntity<TicketResponse> assignAgent(@PathVariable Long id,
             @RequestParam Long agentId) {
         return ResponseEntity.ok(ticketService.assignAgent(id, agentId));
+    }
+
+    @PatchMapping("/{id}/assign-self")
+    public ResponseEntity<TicketResponse> assignToSelf(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(ticketService.assignToSelf(id, auth.getName()));
     }
 
     @GetMapping("/filter")
