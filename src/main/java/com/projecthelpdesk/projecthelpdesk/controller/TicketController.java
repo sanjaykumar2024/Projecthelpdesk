@@ -83,4 +83,9 @@ public class TicketController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         return ResponseEntity.ok(ticketService.filterTickets(status, priority, departmentId, startDate, endDate));
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<TicketResponse>> searchTickets(@RequestParam String q) {
+        return ResponseEntity.ok(ticketService.searchTickets(q));
+    }
 }

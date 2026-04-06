@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Helpdesk</title>
+    <meta name="description" content="View and manage your helpdesk profile">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .profile-hero {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(6, 182, 212, 0.03) 100%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInDown 0.5s ease;
+        }
+        .profile-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .profile-avatar-lg {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+        }
+        .profile-name {
+            font-size: 1.6rem; font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .profile-email { color: var(--text-secondary); margin-top: 4px; }
+        .profile-badges { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+        .profile-badge {
+            padding: 4px 14px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .profile-badge.role { background: rgba(139, 92, 246, 0.12); color: var(--primary); }
+        .profile-badge.dept { background: rgba(6, 182, 212, 0.12); color: #06B6D4; }
+        .profile-badge.provider { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-mini {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stat-mini:hover { transform: translateY(-4px); }
+        .stat-mini .stat-number { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .stat-mini .stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+        .profile-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .profile-sections { grid-template-columns: 1fr; } }
+
+        .profile-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px;
+        }
+        .profile-section h3 {
+            font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .profile-field {
+            margin-bottom: 16px;
+        }
+        .profile-field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .profile-field .value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+        .success-msg { color: #10B981; font-size: 0.85rem; margin-top: 8px; display: none; }
+    </style>
+</head>
+
+<body>
+    <div class="page-loader"><div class="loader-spinner"></div></div>
+
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/knowledge-base" class="nav-link">📚 KB</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage</a>
+                <a href="/analytics" class="nav-link" data-role="ADMIN,AGENT" style="display:none">📊 Analytics</a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <a href="/notifications" class="nav-link" id="notifBell" style="position:relative;font-size:1.2rem;cursor:pointer;">🔔<span id="notifCount" style="display:none;position:absolute;top:-6px;right:-8px;background:#EF4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:800;display:none;align-items:center;justify-content:center;"></span></a>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <a href="/profile" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none;">Profile</a>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline" style="border:none;color:var(--text-muted)">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout" style="display:block">
+        <main class="main-content" style="margin-left:0;padding-top:20px;max-width:900px;margin:0 auto">
+
+            <!-- Profile Hero -->
+            <div class="profile-hero" id="profileHero">
+                <div class="profile-avatar-lg" id="profileAvatar">?</div>
+                <div class="profile-name" id="profileName">Loading...</div>
+                <div class="profile-email" id="profileEmail"></div>
+                <div class="profile-badges" id="profileBadges"></div>
+            </div>
+
+            <!-- Stats -->
+            <div class="profile-stats" id="profileStats">
+                <div class="stat-mini"><div class="stat-number" id="statTotal">-</div><div class="stat-label">Total Tickets</div></div>
+                <div class="stat-mini"><div class="stat-number" id="statOpen">-</div><div class="stat-label">Open Tickets</div></div>
+                <div class="stat-mini"><div class="stat-number" id="statResolved">-</div><div class="stat-label">Resolved</div></div>
+                <div class="stat-mini"><div class="stat-number" id="statMember">-</div><div class="stat-label">Member Since</div></div>
+            </div>
+
+            <!-- Sections -->
+            <div class="profile-sections">
+                <!-- Edit Profile -->
+                <div class="profile-section">
+                    <h3>✏️ Edit Profile</h3>
+                    <form id="editProfileForm">
+                        <div class="profile-field">
+                            <label>Full Name</label>
+                            <input type="text" class="form-control" id="editName" required minlength="2">
+                        </div>
+                        <div class="profile-field">
+                            <label>Phone</label>
+                            <input type="tel" class="form-control" id="editPhone" placeholder="Your phone number">
+                        </div>
+                        <div class="profile-field">
+                            <label>Bio</label>
+                            <textarea class="form-control" id="editBio" rows="3" maxlength="250" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%">💾 Save Changes</button>
+                        <div class="success-msg" id="profileSuccess">✅ Profile updated successfully!</div>
+                    </form>
+                </div>
+
+                <!-- Change Password -->
+                <div class="profile-section" id="passwordSection">
+                    <h3>🔒 Change Password</h3>
+                    <form id="changePasswordForm">
+                        <div class="profile-field">
+                            <label>Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                        </div>
+                        <div class="profile-field">
+                            <label>New Password</label>
+                            <input type="password" class="form-control" id="newPassword" required minlength="6">
+                        </div>
+                        <div class="profile-field">
+                            <label>Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%">🔑 Update Password</button>
+                        <div class="success-msg" id="passwordSuccess">✅ Password changed successfully!</div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Details -->
+            <div class="profile-section" style="margin-top:24px">
+                <h3>📋 Account Details</h3>
+                <div class="form-row">
+                    <div class="profile-field"><label>User ID</label><div class="value" id="detailId">-</div></div>
+                    <div class="profile-field"><label>Email</label><div class="value" id="detailEmail">-</div></div>
+                    <div class="profile-field"><label>Role</label><div class="value" id="detailRole">-</div></div>
+                    <div class="profile-field"><label>Department</label><div class="value" id="detailDept">-</div></div>
+                    <div class="profile-field"><label>Auth Provider</label><div class="value" id="detailProvider">-</div></div>
+                    <div class="profile-field"><label>Joined</label><div class="value" id="detailJoined">-</div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        async function loadProfile() {
+            try {
+                const p = await API.get('/profile');
+                document.getElementById('profileAvatar').textContent = p.fullName.charAt(0).toUpperCase();
+                document.getElementById('profileName').textContent = p.fullName;
+                document.getElementById('profileEmail').textContent = p.email;
+
+                let badges = `<span class="profile-badge role">${p.role}</span>`;
+                if (p.department) badges += `<span class="profile-badge dept">${p.department}</span>`;
+                if (p.authProvider) badges += `<span class="profile-badge provider">${p.authProvider}</span>`;
+                document.getElementById('profileBadges').innerHTML = badges;
+
+                document.getElementById('statTotal').textContent = p.totalTickets;
+                document.getElementById('statOpen').textContent = p.openTickets;
+                document.getElementById('statResolved').textContent = p.resolvedTickets;
+                document.getElementById('statMember').textContent = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '-';
+
+                document.getElementById('editName').value = p.fullName || '';
+                document.getElementById('editPhone').value = p.phone || '';
+                document.getElementById('editBio').value = p.bio || '';
+
+                document.getElementById('detailId').textContent = p.id;
+                document.getElementById('detailEmail').textContent = p.email;
+                document.getElementById('detailRole').textContent = p.role;
+                document.getElementById('detailDept').textContent = p.department || 'None';
+                document.getElementById('detailProvider').textContent = p.authProvider || 'Local';
+                document.getElementById('detailJoined').textContent = p.createdAt ? formatDate(p.createdAt) : '-';
+
+                // Hide password section for OAuth users
+                if (p.authProvider && p.authProvider !== 'local') {
+                    document.getElementById('passwordSection').innerHTML = '<h3>🔒 Password</h3><p style="color:var(--text-secondary)">Password management is not available for Google sign-in accounts.</p>';
+                }
+            } catch (e) { Toast.error('Failed to load profile'); }
+        }
+
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await API.put('/profile', {
+                    fullName: document.getElementById('editName').value,
+                    phone: document.getElementById('editPhone').value,
+                    bio: document.getElementById('editBio').value
+                });
+                const msg = document.getElementById('profileSuccess');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+                Toast.success('Profile updated!');
+                loadProfile();
+            } catch (e) { Toast.error(e.message); }
+        });
+
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPwd = document.getElementById('newPassword').value;
+            const confirmPwd = document.getElementById('confirmPassword').value;
+            if (newPwd !== confirmPwd) { Toast.error('Passwords do not match'); return; }
+            try {
+                await API.put('/profile/password', {
+                    currentPassword: document.getElementById('currentPassword').value,
+                    newPassword: newPwd
+                });
+                const msg = document.getElementById('passwordSuccess');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+                document.getElementById('changePasswordForm').reset();
+                Toast.success('Password updated!');
+            } catch (e) { Toast.error(e.message); }
+        });
+
+        // Load notification count
+        async function loadNotifCount() {
+            try {
+                const count = await API.get('/notifications/unread-count');
+                const badge = document.getElementById('notifCount');
+                if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
+                else { badge.style.display = 'none'; }
+            } catch(e) {}
+        }
+
+        loadProfile();
+        loadNotifCount();
+        setInterval(loadNotifCount, 30000);
+    </script>
+</body>
+</html>

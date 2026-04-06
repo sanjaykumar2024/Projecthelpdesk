@@ -27,20 +27,16 @@ public class DashboardService {
         stats.setResolvedTickets(ticketRepository.countByStatus(TicketStatus.RESOLVED));
         stats.setClosedTickets(ticketRepository.countByStatus(TicketStatus.CLOSED));
 
-        // Tickets by priority
+        // Single query for both priority and department aggregation
         Map<String, Long> byPriority = new HashMap<>();
+        Map<String, Long> byDept = new HashMap<>();
         ticketRepository.findAll().forEach(t -> {
             String p = t.getPriority().name();
             byPriority.put(p, byPriority.getOrDefault(p, 0L) + 1);
-        });
-        stats.setTicketsByPriority(byPriority);
-
-        // Tickets by department
-        Map<String, Long> byDept = new HashMap<>();
-        ticketRepository.findAll().forEach(t -> {
             String d = t.getDepartment().getName();
             byDept.put(d, byDept.getOrDefault(d, 0L) + 1);
         });
+        stats.setTicketsByPriority(byPriority);
         stats.setTicketsByDepartment(byDept);
 
         return stats;

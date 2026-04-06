@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings | Helpdesk</title>
+    <meta name="description" content="Manage departments and view audit logs">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 800px) {
+            .settings-grid { grid-template-columns: 1fr; }
+        }
+
+        .settings-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .settings-card h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        /* Departments List */
+        .dept-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dept-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dept-info h4 { margin: 0 0 4px; font-size: 1rem; }
+        .dept-info p { margin: 0; font-size: 0.8rem; color: var(--text-secondary); }
+
+        .dept-actions {
+            display: flex; gap: 8px;
+        }
+
+        .dept-actions button {
+            background: none; border: none; cursor: pointer;
+            padding: 4px 8px; border-radius: 6px;
+            font-size: 1.1rem;
+        }
+        .btn-edit:hover { background: rgba(59, 130, 246, 0.1); }
+        .btn-delete:hover { background: rgba(239, 68, 68, 0.1); }
+
+        /* Audit Logs Table */
+        .audit-table-wrapper {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .audit-table th, .audit-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .audit-table th {
+            background: var(--bg-secondary);
+            position: sticky;
+            top: 0;
+        }
+
+        .audit-action {
+            font-family: monospace;
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            padding: 32px;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: fadeInDown 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/knowledge-base" class="nav-link">📚 KB</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage</a>
+                <!-- We consider Admin Settings part of 'Manage' in terms of context, so we'll leave it without an active tab for now, or just make Manage active. -->
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <a href="/profile" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none;">Profile</a>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout" style="display:block">
+        <main class="main-content admin-container">
+            <div class="mb-3 d-flex justify-between items-center">
+                <h1>⚙️ Administrative Settings</h1>
+                <a href="/manage-agents" class="btn btn-outline btn-sm">Users & Agents</a>
+            </div>
+
+            <div class="settings-grid">
+                <!-- Departments Management -->
+                <div class="settings-card">
+                    <div class="d-flex justify-between items-center">
+                        <h2>🏢 Departments</h2>
+                        <button class="btn btn-primary btn-sm" onclick="openDeptModal()">+ Add New</button>
+                    </div>
+                    
+                    <ul class="dept-list" id="deptList">
+                        <li style="text-align:center;padding:20px;">Loading...</li>
+                    </ul>
+                </div>
+
+                <!-- Audit Logs -->
+                <div class="settings-card" style="grid-column: 1/-1;">
+                    <h2>📜 System Audit Log</h2>
+                    <p style="color:var(--text-secondary);font-size:0.85rem;margin-top:-10px">Tracks all administrative actions taken within the system.</p>
+                    
+                    <div class="audit-table-wrapper">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Admin</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody">
+                                <tr><td colspan="4" style="text-align:center">Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Department Modal -->
+    <div id="deptModal" class="modal">
+        <div class="modal-content">
+            <h2 id="deptModalTitle" style="margin-bottom:20px;font-size:1.4rem">Add Department</h2>
+            <form id="deptForm" onsubmit="event.preventDefault(); saveDepartment();">
+                <input type="hidden" id="deptId">
+                <div class="form-group">
+                    <label>Department Name</label>
+                    <input type="text" id="deptName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="deptDesc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="d-flex justify-between" style="margin-top:20px">
+                    <button type="button" class="btn btn-outline" onclick="closeDeptModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        // Note: Admin checks are handled by the backend API.
+        
+        async function loadDepartments() {
+            try {
+                const depts = await API.get('/departments');
+                const list = document.getElementById('deptList');
+                
+                if (depts.length === 0) {
+                    list.innerHTML = '<li style="text-align:center;padding:20px;color:var(--text-secondary)">No departments found.</li>';
+                    return;
+                }
+
+                list.innerHTML = depts.map(d => `
+                    <li class="dept-item">
+                        <div class="dept-info">
+                            <h4>${d.name}</h4>
+                            <p>${d.description || 'No description'}</p>
+                        </div>
+                        <div class="dept-actions">
+                            <button class="btn-edit" onclick="openDeptModal(${d.id}, '${d.name.replace(/'/g, "\\'")}', '${(d.description || '').replace(/'/g, "\\'")}')">✏️</button>
+                            <button class="btn-delete" onclick="deleteDepartment(${d.id})">🗑️</button>
+                        </div>
+                    </li>
+                `).join('');
+            } catch (error) {
+                Toast.error('Failed to load departments');
+            }
+        }
+
+        async function loadAuditLogs() {
+            try {
+                const logs = await API.get('/admin/audit-log');
+                const tbody = document.getElementById('auditTableBody');
+                
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No audit logs found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = logs.map(l => `
+                    <tr>
+                        <td style="white-space:nowrap">${formatDate(l.timestamp)}</td>
+                        <td>${l.adminName}</td>
+                        <td><span class="audit-action">${l.action}</span></td>
+                        <td>${l.details}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:red">Permission denied or failed to load.</td></tr>';
+            }
+        }
+
+        function openDeptModal(id = null, name = '', desc = '') {
+            document.getElementById('deptModalTitle').textContent = id ? 'Edit Department' : 'Add Department';
+            document.getElementById('deptId').value = id || '';
+            document.getElementById('deptName').value = name;
+            document.getElementById('deptDesc').value = desc;
+            
+            document.getElementById('deptModal').style.display = 'flex';
+        }
+
+        function closeDeptModal() {
+            document.getElementById('deptModal').style.display = 'none';
+        }
+
+        async function saveDepartment() {
+            const id = document.getElementById('deptId').value;
+            const payload = {
+                name: document.getElementById('deptName').value,
+                description: document.getElementById('deptDesc').value
+            };
+
+            try {
+                if (id) {
+                    await API.put(`/admin/departments/${id}`, payload);
+                    Toast.success('Department updated');
+                } else {
+                    await API.post('/admin/departments', payload);
+                    Toast.success('Department created');
+                }
+                closeDeptModal();
+                loadDepartments();
+                loadAuditLogs();
+            } catch (error) {
+                Toast.error(error.message || 'Failed to save department');
+            }
+        }
+
+        async function deleteDepartment(id) {
+            if (!confirm('Are you sure you want to delete this department? This cannot be undone.')) return;
+            
+            try {
+                await API.delete(`/admin/departments/${id}`);
+                Toast.success('Department deleted');
+                loadDepartments();
+                loadAuditLogs();
+            } catch (error) {
+                Toast.error(error.message || 'Failed to delete department (it may be in use)');
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('deptModal');
+            if (event.target == modal) {
+                closeDeptModal();
+            }
+        }
+
+        loadDepartments();
+        loadAuditLogs();
+    </script>
+</body>
+
+</html>

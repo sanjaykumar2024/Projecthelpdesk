@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | Helpdesk</title>
+    <meta name="description" content="View your notifications">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .notifications-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .notification-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .notification-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid transparent;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .notification-card:hover {
+            transform: translateX(4px);
+            background: var(--bg-secondary);
+        }
+
+        .notification-card.unread {
+            background: rgba(139, 92, 246, 0.05);
+            border-left-color: var(--primary);
+        }
+
+        .notification-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .unread-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .notification-message {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-notifications {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-notifications p {
+            margin-top: 12px;
+        }
+
+        .btn-mark-all {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-mark-all:hover {
+            background: var(--bg-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-logo">🎫 HelpDesk</a>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/tickets" class="nav-link">My Tickets</a>
+                <a href="/create-ticket" class="nav-link">New Ticket</a>
+                <a href="/knowledge-base" class="nav-link">📚 KB</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
+                <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage</a>
+                <a href="/analytics" class="nav-link" data-role="ADMIN,AGENT" style="display:none">📊 Analytics</a>
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" onclick="ThemeManager.toggle()" title="Toggle dark mode"></button>
+                <div class="nav-user">
+                    <div class="nav-avatar">U</div>
+                    <a href="/profile" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none;">Profile</a>
+                    <button onclick="Auth.logout()" class="btn btn-sm btn-outline"
+                        style="border:none;color:var(--text-muted)">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout" style="display:block">
+        <main class="main-content notifications-container">
+            <div class="notifications-header">
+                <h1>🔔 Notifications</h1>
+                <button class="btn-mark-all" id="btnMarkAll" onclick="markAllAsRead()" style="display:none">
+                    ✓ Mark All as Read
+                </button>
+            </div>
+
+            <div class="notification-list" id="notificationList">
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/chatbot.js"></script>
+    <script>
+        if (!Auth.requireAuth()) throw new Error('Not authenticated');
+
+        function getIconForType(type) {
+            switch (type) {
+                case 'TICKET_CREATED': return '🎫';
+                case 'TICKET_ASSIGNED': return '👤';
+                case 'STATUS_CHANGED': return '🔄';
+                case 'COMMENT_ADDED': return '💬';
+                case 'TICKET_RESOLVED': return '✅';
+                case 'TICKET_ESCALATED': return '⚠️';
+                case 'SLA_BREACH': return '⏰';
+                default: return '🔔';
+            }
+        }
+
+        function formatDistanceToNow(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return `Just now`;
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        async function loadNotifications() {
+            try {
+                const notifications = await API.get('/notifications');
+                const list = document.getElementById('notificationList');
+                const btnMarkAll = document.getElementById('btnMarkAll');
+
+                const hasUnread = notifications.some(n => !n.read);
+                if (hasUnread) {
+                    btnMarkAll.style.display = 'block';
+                } else {
+                    btnMarkAll.style.display = 'none';
+                }
+
+                if (notifications.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-notifications">
+                            <span style="font-size:3rem">📭</span>
+                            <p>You have no notifications yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = notifications.map((n, i) => `
+                    <div class="notification-card ${!n.read ? 'unread' : ''}" 
+                         style="animation: fadeInDown 0.3s ease ${i * 0.05}s forwards; opacity: 0;"
+                         onclick="handleNotificationClick(${n.id}, ${n.ticketId}, ${n.read})">
+                        <div class="notification-icon">
+                            ${getIconForType(n.type)}
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">
+                                ${!n.read ? '<span class="unread-dot"></span>' : ''}
+                                ${n.title}
+                            </div>
+                            <div class="notification-message">${n.message}</div>
+                            <div class="notification-time">
+                                🕒 ${formatDistanceToNow(n.createdAt)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                Toast.error('Failed to load notifications');
+            }
+        }
+
+        async function markAllAsRead() {
+            try {
+                await API.patch('/notifications/read-all');
+                Toast.success('All marked as read');
+                loadNotifications();
+            } catch (error) {
+                Toast.error('Failed to mark all as read');
+            }
+        }
+
+        async function handleNotificationClick(id, ticketId, isRead) {
+            try {
+                if (!isRead) {
+                    await API.patch(`/notifications/${id}/read`);
+                }
+                if (ticketId) {
+                    window.location.href = `/ticket-detail?id=${ticketId}`;
+                }
+            } catch (error) {
+                console.error("Error marking as read", error);
+                if (ticketId) window.location.href = `/ticket-detail?id=${ticketId}`;
+            }
+        }
+
+        loadNotifications();
+    </script>
+</body>
+
+</html>

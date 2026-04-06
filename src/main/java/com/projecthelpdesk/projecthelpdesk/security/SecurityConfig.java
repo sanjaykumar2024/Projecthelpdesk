@@ -39,13 +39,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/api/departments/**").permitAll()
+                        .requestMatchers("/api/knowledge/**").permitAll()
                         .requestMatchers("/*.html", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/").permitAll()
-                        // Clean URL page routes (no .html extension)
+                        // Clean URL page routes
                         .requestMatchers("/login", "/register", "/dashboard", "/tickets",
-                                "/create-ticket", "/ticket-detail", "/oauth2callback", "/manage-agents", "/all-tickets", "/department-tickets")
+                                "/create-ticket", "/ticket-detail", "/oauth2callback",
+                                "/manage-agents", "/all-tickets", "/department-tickets",
+                                "/profile", "/notifications", "/knowledge-base",
+                                "/analytics", "/admin-settings")
                         .permitAll()
                         .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "AGENT")
+                        .requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "AGENT")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/tickets/all").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

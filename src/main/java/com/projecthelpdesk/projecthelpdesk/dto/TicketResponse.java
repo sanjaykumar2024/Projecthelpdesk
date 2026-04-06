@@ -151,4 +151,13 @@ public class TicketResponse {
     public void setHasFeedback(boolean hasFeedback) {
         this.hasFeedback = hasFeedback;
     }
+
+    private LocalDateTime dueDate;
+    private boolean escalated;
+
+    public LocalDateTime getDueDate() { return dueDate; }
+    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+
+    public boolean isEscalated() { return escalated; }
+    public void setEscalated(boolean escalated) { this.escalated = escalated; }
 }

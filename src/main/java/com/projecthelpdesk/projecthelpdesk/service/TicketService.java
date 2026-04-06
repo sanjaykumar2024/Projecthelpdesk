@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.projecthelpdesk.projecthelpdesk.entity.NotificationType;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,15 +31,19 @@ public class TicketService {
     private final DepartmentRepository departmentRepository;
     private final TicketFeedbackRepository feedbackRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
+    private final SLAService slaService;
 
     public TicketService(TicketRepository ticketRepository, UserRepository userRepository,
             DepartmentRepository departmentRepository, TicketFeedbackRepository feedbackRepository,
-            EmailService emailService) {
+            EmailService emailService, NotificationService notificationService, SLAService slaService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.feedbackRepository = feedbackRepository;
         this.emailService = emailService;
+        this.notificationService = notificationService;
+        this.slaService = slaService;
     }
 
     @Transactional
@@ -55,8 +61,14 @@ public class TicketService {
         ticket.setDepartment(dept);
         ticket.setStatus(TicketStatus.OPEN);
 
+        // SLA Calculation
+        ticket.setDueDate(slaService.calculateDueDate(ticket.getPriority()));
+
         ticket = ticketRepository.save(ticket);
         emailService.sendTicketCreatedEmail(ticket);
+        notificationService.createNotification(creator, "Ticket Created",
+                "Your ticket #" + ticket.getId() + " '" + ticket.getTitle() + "' has been created.",
+                NotificationType.TICKET_CREATED, ticket.getId());
         return mapToResponse(ticket);
     }
 
@@ -126,7 +138,13 @@ public class TicketService {
         if (newStatus == TicketStatus.RESOLVED) {
             ticket.setResolvedAt(LocalDateTime.now());
             emailService.sendTicketResolvedEmail(ticket);
+            notificationService.createNotification(ticket.getCreator(), "Ticket Resolved",
+                    "Your ticket #" + ticket.getId() + " has been resolved.",
+                    NotificationType.TICKET_RESOLVED, ticket.getId());
         }
+        notificationService.createNotification(ticket.getCreator(), "Status Updated",
+                "Ticket #" + ticket.getId() + " status changed to " + newStatus.name(),
+                NotificationType.STATUS_CHANGED, ticket.getId());
         return mapToResponse(ticketRepository.save(ticket));
     }
 
@@ -149,6 +167,9 @@ public class TicketService {
 
         ticket = ticketRepository.save(ticket);
         emailService.sendTicketAssignedEmail(ticket);
+        notificationService.createNotification(agent, "Ticket Assigned",
+                "Ticket #" + ticket.getId() + " '" + ticket.getTitle() + "' has been assigned to you.",
+                NotificationType.TICKET_ASSIGNED, ticket.getId());
         return mapToResponse(ticket);
     }
 
@@ -169,6 +190,11 @@ public class TicketService {
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    public List<TicketResponse> searchTickets(String keyword) {
+        return ticketRepository.searchByKeyword(keyword)
+                .stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     private TicketResponse mapToResponse(Ticket t) {
         TicketResponse r = new TicketResponse();
         r.setId(t.getId());
@@ -184,6 +210,8 @@ public class TicketService {
         r.setCreatedAt(t.getCreatedAt());
         r.setUpdatedAt(t.getUpdatedAt());
         r.setResolvedAt(t.getResolvedAt());
+        r.setDueDate(t.getDueDate());
+        r.setEscalated(t.isEscalated());
         if (t.getAssignedAgent() != null) {
             r.setAssignedAgentId(t.getAssignedAgent().getId());
             r.setAssignedAgentName(t.getAssignedAgent().getFullName());

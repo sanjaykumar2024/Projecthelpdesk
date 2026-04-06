@@ -1,5 +1,6 @@
 package com.projecthelpdesk.projecthelpdesk.controller;
 
+import com.projecthelpdesk.projecthelpdesk.dto.DepartmentRequest;
 import com.projecthelpdesk.projecthelpdesk.dto.UpdateUserRequest;
 import com.projecthelpdesk.projecthelpdesk.dto.UserDTO;
 import com.projecthelpdesk.projecthelpdesk.entity.Department;
@@ -11,27 +12,34 @@ import com.projecthelpdesk.projecthelpdesk.exception.ResourceNotFoundException;
 import com.projecthelpdesk.projecthelpdesk.repository.DepartmentRepository;
 import com.projecthelpdesk.projecthelpdesk.repository.RoleRepository;
 import com.projecthelpdesk.projecthelpdesk.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.projecthelpdesk.projecthelpdesk.service.AuditService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
-// @PreAuthorize("hasRole('ADMIN')") // In real implementation, secure this
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final DepartmentRepository departmentRepository;
+    private final AuditService auditService;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private DepartmentRepository departmentRepository;
+    public AdminController(UserRepository userRepository, RoleRepository roleRepository,
+            DepartmentRepository departmentRepository, AuditService auditService) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.departmentRepository = departmentRepository;
+        this.auditService = auditService;
+    }
 
     @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
@@ -48,9 +56,12 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request,
+            Authentication auth) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        String oldRole = user.getRole().getRoleName().name();
 
         // Update Role
         if (request.getRole() != null) {
@@ -71,12 +82,65 @@ public class AdminController {
                             "Department not found with id: " + request.getDepartmentId()));
             user.setDepartment(department);
         } else if ("USER".equals(request.getRole()) || "ADMIN".equals(request.getRole())) {
-            // If demoting to USER or promoting to ADMIN, clear department (optional logic,
-            // but clean)
             user.setDepartment(null);
         }
 
         userRepository.save(user);
+
+        // Audit log
+        auditService.log(auth.getName(), "UPDATE_USER", "User", id,
+                "Updated user " + user.getFullName() + " role: " + oldRole + " → " + user.getRole().getRoleName().name());
+
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, Authentication auth) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        user.setEnabled(false); // soft delete
+        userRepository.save(user);
+        auditService.log(auth.getName(), "DISABLE_USER", "User", id, "Disabled user " + user.getFullName());
+        return ResponseEntity.ok().build();
+    }
+
+    // ===== Department Management =====
+
+    @PostMapping("/departments")
+    public ResponseEntity<Department> createDepartment(@RequestBody DepartmentRequest request, Authentication auth) {
+        Department dept = new Department();
+        dept.setName(request.getName());
+        dept.setDescription(request.getDescription());
+        dept = departmentRepository.save(dept);
+        auditService.log(auth.getName(), "CREATE_DEPARTMENT", "Department", dept.getId(), "Created department: " + dept.getName());
+        return ResponseEntity.ok(dept);
+    }
+
+    @PutMapping("/departments/{id}")
+    public ResponseEntity<Department> updateDepartment(@PathVariable Long id,
+            @RequestBody DepartmentRequest request, Authentication auth) {
+        Department dept = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        if (request.getName() != null) dept.setName(request.getName());
+        if (request.getDescription() != null) dept.setDescription(request.getDescription());
+        departmentRepository.save(dept);
+        auditService.log(auth.getName(), "UPDATE_DEPARTMENT", "Department", id, "Updated department: " + dept.getName());
+        return ResponseEntity.ok(dept);
+    }
+
+    @DeleteMapping("/departments/{id}")
+    public ResponseEntity<?> deleteDepartment(@PathVariable Long id, Authentication auth) {
+        Department dept = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        departmentRepository.delete(dept);
+        auditService.log(auth.getName(), "DELETE_DEPARTMENT", "Department", id, "Deleted department: " + dept.getName());
+        return ResponseEntity.ok().build();
+    }
+
+    // ===== Audit Log =====
+
+    @GetMapping("/audit-log")
+    public ResponseEntity<List<Map<String, Object>>> getAuditLog() {
+        return ResponseEntity.ok(auditService.getRecentLogs());
     }
 }

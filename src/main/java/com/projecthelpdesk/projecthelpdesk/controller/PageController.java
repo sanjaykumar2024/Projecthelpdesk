@@ -59,4 +59,29 @@ public class PageController {
     public String departmentTickets() {
         return "forward:/department-tickets.html";
     }
+
+    @GetMapping("/profile")
+    public String profile() {
+        return "forward:/profile.html";
+    }
+
+    @GetMapping("/notifications")
+    public String notifications() {
+        return "forward:/notifications.html";
+    }
+
+    @GetMapping("/knowledge-base")
+    public String knowledgeBase() {
+        return "forward:/knowledge-base.html";
+    }
+
+    @GetMapping("/analytics")
+    public String analytics() {
+        return "forward:/analytics.html";
+    }
+
+    @GetMapping("/admin-settings")
+    public String adminSettings() {
+        return "forward:/admin-settings.html";
+    }
 }

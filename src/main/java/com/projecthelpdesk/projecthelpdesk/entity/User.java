@@ -45,6 +45,15 @@ public class User {
     private LocalDateTime otpExpiry;
     private boolean enabled = false;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 250)
+    private String bio;
+
+    @Column(length = 500)
+    private String profilePictureUrl;
+
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -141,5 +150,29 @@ public class User {
 
     public void setAuthProvider(String authProvider) {
         this.authProvider = authProvider;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }

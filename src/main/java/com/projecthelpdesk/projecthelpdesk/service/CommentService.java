@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.projecthelpdesk.projecthelpdesk.dto.CommentRequest;
 import com.projecthelpdesk.projecthelpdesk.dto.CommentResponse;
+import com.projecthelpdesk.projecthelpdesk.entity.NotificationType;
 import com.projecthelpdesk.projecthelpdesk.entity.Ticket;
 import com.projecthelpdesk.projecthelpdesk.entity.TicketComment;
 import com.projecthelpdesk.projecthelpdesk.entity.User;
@@ -21,12 +22,14 @@ public class CommentService {
     private final TicketCommentRepository commentRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public CommentService(TicketCommentRepository commentRepository, TicketRepository ticketRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository, NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public CommentResponse addComment(Long ticketId, CommentRequest request, String email) {
@@ -40,6 +43,20 @@ public class CommentService {
         comment.setTicket(ticket);
         comment.setAuthor(author);
         comment = commentRepository.save(comment);
+
+        // Notify ticket creator (if commenter is not the creator)
+        if (!ticket.getCreator().getId().equals(author.getId())) {
+            notificationService.createNotification(ticket.getCreator(), "New Comment",
+                    author.getFullName() + " commented on ticket #" + ticketId,
+                    NotificationType.COMMENT_ADDED, ticketId);
+        }
+        // Notify assigned agent (if commenter is not the agent)
+        if (ticket.getAssignedAgent() != null && !ticket.getAssignedAgent().getId().equals(author.getId())) {
+            notificationService.createNotification(ticket.getAssignedAgent(), "New Comment",
+                    author.getFullName() + " commented on ticket #" + ticketId,
+                    NotificationType.COMMENT_ADDED, ticketId);
+        }
+
         return mapToResponse(comment);
     }
 
