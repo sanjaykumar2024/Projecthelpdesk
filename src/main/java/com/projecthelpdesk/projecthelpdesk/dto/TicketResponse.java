@@ -20,6 +20,7 @@ public class TicketResponse {
     private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
     private boolean hasFeedback;
+    private String attachmentUrl;
 
     public TicketResponse() {
     }
@@ -160,4 +161,7 @@ public class TicketResponse {
 
     public boolean isEscalated() { return escalated; }
     public void setEscalated(boolean escalated) { this.escalated = escalated; }
+
+    public String getAttachmentUrl() { return attachmentUrl; }
+    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
 }

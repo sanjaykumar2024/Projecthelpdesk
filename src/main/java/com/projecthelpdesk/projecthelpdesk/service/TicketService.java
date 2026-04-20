@@ -38,11 +38,13 @@ public class TicketService {
     private final NotificationService notificationService;
     private final SLAService slaService;
     private final com.projecthelpdesk.projecthelpdesk.repository.TicketActivityRepository activityRepository;
+    private final FileStorageService fileStorageService;
 
     public TicketService(TicketRepository ticketRepository, UserRepository userRepository,
             DepartmentRepository departmentRepository, TicketFeedbackRepository feedbackRepository,
             EmailService emailService, NotificationService notificationService, SLAService slaService,
-            com.projecthelpdesk.projecthelpdesk.repository.TicketActivityRepository activityRepository) {
+            com.projecthelpdesk.projecthelpdesk.repository.TicketActivityRepository activityRepository,
+            FileStorageService fileStorageService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
@@ -51,10 +53,11 @@ public class TicketService {
         this.notificationService = notificationService;
         this.slaService = slaService;
         this.activityRepository = activityRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
-    public TicketResponse createTicket(TicketRequest request, String email) {
+    public TicketResponse createTicket(TicketRequest request, org.springframework.web.multipart.MultipartFile file, String email) {
         User creator = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Department dept = departmentRepository.findById(request.getDepartmentId())
@@ -70,6 +73,11 @@ public class TicketService {
 
         // SLA Calculation
         ticket.setDueDate(slaService.calculateDueDate(ticket.getPriority()));
+
+        if (file != null && !file.isEmpty()) {
+            String fileUrl = fileStorageService.storeFile(file);
+            ticket.setAttachmentUrl(fileUrl);
+        }
 
         ticket = ticketRepository.save(ticket);
         
@@ -281,6 +289,7 @@ public class TicketService {
         r.setResolvedAt(t.getResolvedAt());
         r.setDueDate(t.getDueDate());
         r.setEscalated(t.isEscalated());
+        r.setAttachmentUrl(t.getAttachmentUrl());
         if (t.getAssignedAgent() != null) {
             r.setAssignedAgentId(t.getAssignedAgent().getId());
             r.setAssignedAgentName(t.getAssignedAgent().getFullName());

@@ -33,10 +33,12 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
-    @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody TicketRequest request,
+    @PostMapping(consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<TicketResponse> createTicket(
+            @Valid @org.springframework.web.bind.annotation.ModelAttribute TicketRequest request,
+            @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
             Authentication auth) {
-        return ResponseEntity.ok(ticketService.createTicket(request, auth.getName()));
+        return ResponseEntity.ok(ticketService.createTicket(request, file, auth.getName()));
     }
 
     @GetMapping

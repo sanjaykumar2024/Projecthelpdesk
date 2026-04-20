@@ -27,11 +27,12 @@ public class CommentController {
         this.commentService = commentService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<CommentResponse> addComment(@PathVariable Long ticketId,
-            @Valid @RequestBody CommentRequest request,
+            @Valid @org.springframework.web.bind.annotation.ModelAttribute CommentRequest request,
+            @org.springframework.web.bind.annotation.RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
             Authentication auth) {
-        return ResponseEntity.ok(commentService.addComment(ticketId, request, auth.getName()));
+        return ResponseEntity.ok(commentService.addComment(ticketId, request, file, auth.getName()));
     }
 
     @GetMapping

@@ -56,6 +56,9 @@ public class Ticket {
     private LocalDateTime dueDate;
     private boolean escalated = false;
 
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -172,5 +175,13 @@ public class Ticket {
 
     public void setEscalated(boolean escalated) {
         this.escalated = escalated;
+    }
+
+    public String getAttachmentUrl() {
+        return attachmentUrl;
+    }
+
+    public void setAttachmentUrl(String attachmentUrl) {
+        this.attachmentUrl = attachmentUrl;
     }
 }

@@ -26,17 +26,20 @@ public class CommentService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final TicketActivityRepository activityRepository;
+    private final FileStorageService fileStorageService;
 
     public CommentService(TicketCommentRepository commentRepository, TicketRepository ticketRepository,
-            UserRepository userRepository, NotificationService notificationService, TicketActivityRepository activityRepository) {
+            UserRepository userRepository, NotificationService notificationService, TicketActivityRepository activityRepository,
+            FileStorageService fileStorageService) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.activityRepository = activityRepository;
+        this.fileStorageService = fileStorageService;
     }
 
-    public CommentResponse addComment(Long ticketId, CommentRequest request, String email) {
+    public CommentResponse addComment(Long ticketId, CommentRequest request, org.springframework.web.multipart.MultipartFile file, String email) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
         User author = userRepository.findByEmail(email)
@@ -46,6 +49,11 @@ public class CommentService {
         comment.setMessage(request.getMessage());
         comment.setTicket(ticket);
         comment.setAuthor(author);
+        
+        if (file != null && !file.isEmpty()) {
+            comment.setAttachmentUrl(fileStorageService.storeFile(file));
+        }
+        
         comment = commentRepository.save(comment);
 
         activityRepository.save(new TicketActivity(ticket, author, "Added a comment", "COMMENT"));
@@ -81,6 +89,7 @@ public class CommentService {
         r.setAuthorName(c.getAuthor().getFullName());
         r.setAuthorEmail(c.getAuthor().getEmail());
         r.setCreatedAt(c.getCreatedAt());
+        r.setAttachmentUrl(c.getAttachmentUrl());
         return r;
     }
 }

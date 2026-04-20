@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/chatbot/**").permitAll()
                         .requestMatchers("/api/departments/**").permitAll()
                         .requestMatchers("/api/knowledge/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/*.html", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/").permitAll()
                         // Clean URL page routes

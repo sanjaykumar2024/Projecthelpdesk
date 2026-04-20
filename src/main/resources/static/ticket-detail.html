@@ -69,6 +69,9 @@
                             <div class="form-group">
                                 <textarea class="form-control" id="commentInput" placeholder="Write a comment..."
                                     rows="3"></textarea>
+                            <div class="form-group" style="margin-top:12px;">
+                                <label class="form-label">Attachment (Optional)</label>
+                                <input type="file" id="commentAttachment" class="form-control" style="padding:10px; background:var(--bg-primary);">
                             </div>
                             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                                 <button class="btn btn-primary btn-sm" onclick="submitComment()">💬 Add Comment</button>
@@ -218,6 +221,7 @@
                     ${getStatusBadge(t.status)}
                 </div>
                 <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:16px;white-space:pre-wrap">${t.description}</p>
+                ${t.attachmentUrl ? `<div style="margin-top:16px"><img src="${t.attachmentUrl}" alt="Attachment" style="max-width:100%;border-radius:8px;border:1px solid var(--border-color);"></div>` : ''}
             `;
 
             document.getElementById('metaInfo').innerHTML = `
@@ -313,6 +317,7 @@
                         <div class="comment-body">
                             <div class="comment-author">${c.authorName}</div>
                             <div class="comment-text">${c.message}</div>
+                            ${c.attachmentUrl ? `<div style="margin-top:8px"><img src="${c.attachmentUrl}" alt="Comment Attachment" style="max-width:400px;border-radius:12px;border:1px solid var(--border-color);box-shadow:var(--shadow-sm);"></div>` : ''}
                             <div class="comment-time">${formatDate(c.createdAt)}</div>
                         </div>
                     </div>
@@ -365,12 +370,30 @@
             if (!message) { Toast.warning('Please enter a comment'); return; }
 
             try {
-                await API.post(`/tickets/${ticketId}/comments`, { message });
+                const formData = new FormData();
+                formData.append('message', message);
+                const fileInput = document.getElementById('commentAttachment');
+                if (fileInput.files.length > 0) {
+                    formData.append('file', fileInput.files[0]);
+                }
+                
+                const response = await fetch(`/api/tickets/${ticketId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Failed to add comment');
+                }
+
                 document.getElementById('commentInput').value = '';
+                if (fileInput) fileInput.value = '';
                 Toast.success('Comment added');
                 loadComments();
             } catch (error) {
-                Toast.error('Failed to add comment');
+                Toast.error(error.message || 'Failed to add comment');
             }
         }
 
@@ -409,7 +432,7 @@
             LOW: ""
         };
 
-        function generateAIComment() {
+        async function generateAIComment() {
             if (!currentTicket) { Toast.warning('Ticket not loaded yet'); return; }
 
             const btn = document.getElementById('aiBtn');
@@ -422,31 +445,49 @@
             shimmer.style.display = 'block';
             shimmer.style.animation = 'shimmer 1s ease-in-out infinite';
 
-            // Pick a random template based on status
-            const templates = aiTemplates[currentTicket.status] || aiTemplates.OPEN;
-            let comment = templates[Math.floor(Math.random() * templates.length)];
-
-            // Add priority prefix for urgent/high
-            const prefix = priorityPrefixes[currentTicket.priority] || '';
-            if (prefix) comment = prefix + comment;
-
-            // Simulate typing effect
-            textarea.value = '';
-            let i = 0;
-            const typeSpeed = 12;
-            function typeChar() {
-                if (i < comment.length) {
-                    textarea.value += comment.charAt(i);
-                    i++;
-                    setTimeout(typeChar, typeSpeed);
-                } else {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    shimmer.style.display = 'none';
-                    Toast.success('AI comment generated! Feel free to edit before submitting.');
+            try {
+                const response = await fetch('/api/ai/generate-reply', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token') 
+                    },
+                    body: JSON.stringify({
+                        title: currentTicket.title,
+                        description: currentTicket.description,
+                        priority: currentTicket.priority
+                    })
+                });
+                
+                if (!response.ok) throw new Error('AI Service unavailable');
+                
+                const data = await response.json();
+                let comment = data.reply;
+                
+                // Simulate typing effect
+                textarea.value = '';
+                let i = 0;
+                const typeSpeed = 12;
+                function typeChar() {
+                    if (i < comment.length) {
+                        textarea.value += comment.charAt(i);
+                        i++;
+                        setTimeout(typeChar, typeSpeed);
+                    } else {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        shimmer.style.display = 'none';
+                        Toast.success('AI comment generated! Feel free to edit before submitting.');
+                    }
                 }
+                setTimeout(typeChar, 100);
+            } catch (err) {
+                console.error(err);
+                Toast.error('Fallback used/AI error: ' + err.message);
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                shimmer.style.display = 'none';
             }
-            setTimeout(typeChar, 300);
         }
 
         async function updateStatus() {

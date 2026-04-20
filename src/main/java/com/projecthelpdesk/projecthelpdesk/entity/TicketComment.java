@@ -34,6 +34,9 @@ public class TicketComment {
 
     private LocalDateTime createdAt;
 
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -80,5 +83,13 @@ public class TicketComment {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getAttachmentUrl() {
+        return attachmentUrl;
+    }
+
+    public void setAttachmentUrl(String attachmentUrl) {
+        this.attachmentUrl = attachmentUrl;
     }
 }
