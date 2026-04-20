@@ -65,6 +65,13 @@ public class AdminController {
 
         // Update Role
         if (request.getRole() != null) {
+            // HOD requires a department
+            if ("HOD".equals(request.getRole()) && request.getDepartmentId() == null) {
+                // Check if user already has a department
+                if (user.getDepartment() == null) {
+                    throw new BadRequestException("Department is mandatory for HOD role. Please select a department.");
+                }
+            }
             try {
                 ERole roleEnum = ERole.valueOf(request.getRole());
                 Role role = roleRepository.findByRoleName(roleEnum)
@@ -84,6 +91,7 @@ public class AdminController {
         } else if ("USER".equals(request.getRole()) || "ADMIN".equals(request.getRole())) {
             user.setDepartment(null);
         }
+        // Note: HOD and AGENT keep their department even if departmentId is null in the request
 
         userRepository.save(user);
 

@@ -7,6 +7,7 @@
     <title>Ticket Detail | Helpdesk</title>
     <meta name="description" content="View ticket details, comments, and feedback">
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
@@ -22,7 +23,7 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
-                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT,HOD" style="display:none">Dept Tickets</a>
                 <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
@@ -80,6 +81,16 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Timeline Section -->
+                    <div class="glass-card mt-3">
+                        <h3 style="margin-bottom:16px;font-weight:700">⏱️ Activity Timeline</h3>
+                        <div id="timelineContainer" class="timeline">
+                            <div class="loader">
+                                <div class="loader-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column - Actions & Info -->
@@ -102,9 +113,12 @@
                         </div>
 
                         <div class="form-group" id="assignGroup" style="display:none">
-                            <label class="form-label">Assign Agent (User ID)</label>
+                            <label class="form-label">Assign Agent</label>
+                            <select class="form-control" id="agentSelect" style="display:none">
+                                <option value="">-- Select Agent --</option>
+                            </select>
                             <input type="number" class="form-control" id="agentIdInput"
-                                placeholder="Enter agent user ID">
+                                placeholder="Enter agent user ID" style="display:none">
                             <button class="btn btn-success btn-sm mt-1 w-100" onclick="assignAgent()">Assign
                                 Agent</button>
                         </div>
@@ -124,9 +138,20 @@
                     </div>
 
                     <!-- Feedback Section -->
-                    <div class="glass-card" id="feedbackCard" style="display:none">
+                    <div class="glass-card mb-3" id="feedbackCard" style="display:none">
                         <h3 style="margin-bottom:16px;font-weight:700">⭐ Rating & Feedback</h3>
                         <div id="feedbackContent"></div>
+                    </div>
+
+                    <!-- QR Code Card -->
+                    <div class="glass-card qr-card" id="qrCard">
+                        <h3 style="margin-bottom:12px;font-weight:700">📱 QR Code</h3>
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">Scan to check ticket status on your phone</p>
+                        <div id="qrcode" style="display:flex;justify-content:center"></div>
+                        <div class="qr-actions">
+                            <button class="btn btn-outline btn-sm" onclick="downloadQR()">⬇ Download</button>
+                            <button class="btn btn-outline btn-sm" onclick="copyTicketLink()">🔗 Copy Link</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -175,6 +200,7 @@
                 currentTicket = await API.get(`/tickets/${ticketId}`);
                 renderTicket(currentTicket);
                 loadComments();
+                loadActivities();
                 checkFeedback();
                 setupActions();
             } catch (error) {
@@ -216,13 +242,23 @@
             const role = Auth.getRole();
             const user = Auth.getUser();
 
-            if (role === 'ADMIN' || role === 'AGENT') {
+            if (role === 'ADMIN' || role === 'AGENT' || role === 'HOD') {
                 document.getElementById('actionsCard').style.display = 'block';
+
                 if (role === 'ADMIN') {
+                    // Admin uses raw ID input
                     document.getElementById('assignGroup').style.display = 'block';
+                    document.getElementById('agentIdInput').style.display = 'block';
+                    document.getElementById('agentSelect').style.display = 'none';
+                } else if (role === 'HOD') {
+                    // HOD uses dropdown with same-department agents
+                    document.getElementById('assignGroup').style.display = 'block';
+                    document.getElementById('agentSelect').style.display = 'block';
+                    document.getElementById('agentIdInput').style.display = 'none';
+                    loadDepartmentAgents();
                 }
 
-                // Agents can assign unassigned tickets to themselves, or override assignments if needed in their dept
+                // Agents can assign unassigned tickets to themselves
                 if (role === 'AGENT' && currentTicket.assignedAgentId !== user.userId) {
                     document.getElementById('assignToMeGroup').style.display = 'block';
                 } else if (role === 'AGENT' && currentTicket.assignedAgentId === user.userId) {
@@ -238,6 +274,26 @@
                     <p style="color:var(--text-secondary);margin-bottom:12px">Your ticket has been resolved! Please rate your experience.</p>
                     <button class="btn btn-primary w-100" onclick="openFeedbackModal()">⭐ Leave Feedback</button>
                 `;
+            }
+        }
+
+        async function loadDepartmentAgents() {
+            try {
+                const agents = await API.get('/tickets/department-agents');
+                const select = document.getElementById('agentSelect');
+                select.innerHTML = '<option value="">-- Select Agent --</option>';
+                agents.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.textContent = `${a.fullName} (ID: ${a.id})`;
+                    select.appendChild(opt);
+                });
+                if (agents.length === 0) {
+                    select.innerHTML = '<option value="">No agents in your department</option>';
+                }
+            } catch (e) {
+                console.error('Failed to load department agents', e);
+                Toast.error('Failed to load department agents');
             }
         }
 
@@ -263,6 +319,44 @@
                 `).join('');
             } catch (error) {
                 console.error('Failed to load comments');
+            }
+        }
+
+        async function loadActivities() {
+            try {
+                const activities = await API.get(`/tickets/${ticketId}/activities`);
+                const container = document.getElementById('timelineContainer');
+                
+                if (!activities.length) {
+                    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No activity recorded.</p>';
+                    return;
+                }
+
+                container.innerHTML = '<div class="timeline-wrapper">' + activities.map((a, i) => {
+                    let icon = '▶️';
+                    let bg = 'var(--primary)';
+                    if (a.activityType === 'TICKET_CREATED') { icon = '🆕'; bg = '#10B981'; }
+                    if (a.activityType === 'STATUS_CHANGE') { icon = '🔄'; bg = '#3B82F6'; }
+                    if (a.activityType === 'ASSIGNMENT') { icon = '👤'; bg = '#F59E0B'; }
+                    if (a.activityType === 'ESCALATION') { icon = '⚠️'; bg = '#EF4444'; }
+                    if (a.activityType === 'COMMENT') { icon = '💬'; bg = '#8B5CF6'; }
+
+                    return `
+                        <div class="timeline-item" style="animation-delay:${i * 0.1}s">
+                            <div class="timeline-marker" style="background:${bg}">${icon}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-desc">${a.actionInfo}</div>
+                                <div class="timeline-meta">
+                                    <span class="timeline-actor">👤 ${a.actorName}</span>
+                                    <span class="timeline-time">🕑 ${timeAgo(a.createdAt)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') + '</div>';
+            } catch (error) {
+                console.error('Failed to load activities', error);
+                document.getElementById('timelineContainer').innerHTML = '<p style="color:var(--error)">Error loading timeline.</p>';
             }
         }
 
@@ -360,6 +454,10 @@
             try {
                 await API.patch(`/tickets/${ticketId}/status?status=${status}`);
                 Toast.success('Status updated to ' + status);
+                // 🎉 Confetti celebration on resolve!
+                if (status === 'RESOLVED') {
+                    Confetti.fire(3000);
+                }
                 loadTicket();
             } catch (error) {
                 Toast.error('Failed to update status');
@@ -367,15 +465,22 @@
         }
 
         async function assignAgent() {
-            const agentId = document.getElementById('agentIdInput').value;
-            if (!agentId) { Toast.warning('Enter an agent ID'); return; }
+            const role = Auth.getRole();
+            let agentId;
+            if (role === 'HOD') {
+                agentId = document.getElementById('agentSelect').value;
+                if (!agentId) { Toast.warning('Please select an agent'); return; }
+            } else {
+                agentId = document.getElementById('agentIdInput').value;
+                if (!agentId) { Toast.warning('Enter an agent ID'); return; }
+            }
 
             try {
                 await API.patch(`/tickets/${ticketId}/assign?agentId=${agentId}`);
                 Toast.success('Agent assigned successfully');
                 loadTicket();
             } catch (error) {
-                Toast.error('Failed to assign agent');
+                Toast.error(error.message || 'Failed to assign agent');
             }
         }
 
@@ -432,7 +537,46 @@
             }
         }
 
+        // Generate QR code on load
+        function generateQR() {
+            const qrContainer = document.getElementById('qrcode');
+            if (!qrContainer) return;
+            qrContainer.innerHTML = '';
+            const url = window.location.href;
+            try {
+                new QRCode(qrContainer, {
+                    text: url,
+                    width: 140,
+                    height: 140,
+                    colorDark: '#1E293B',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                qrContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem">QR not available</p>';
+            }
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (!canvas) { Toast.warning('QR code not ready'); return; }
+            const link = document.createElement('a');
+            link.download = `ticket-${ticketId}-qr.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            Toast.success('QR code downloaded!');
+        }
+
+        function copyTicketLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                Toast.success('Ticket link copied!');
+            }).catch(() => {
+                Toast.error('Failed to copy link');
+            });
+        }
+
         loadTicket();
+        setTimeout(generateQR, 500);
     </script>
 </body>
 

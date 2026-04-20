@@ -9,12 +9,14 @@ import com.projecthelpdesk.projecthelpdesk.dto.CommentRequest;
 import com.projecthelpdesk.projecthelpdesk.dto.CommentResponse;
 import com.projecthelpdesk.projecthelpdesk.entity.NotificationType;
 import com.projecthelpdesk.projecthelpdesk.entity.Ticket;
+import com.projecthelpdesk.projecthelpdesk.entity.TicketActivity;
 import com.projecthelpdesk.projecthelpdesk.entity.TicketComment;
 import com.projecthelpdesk.projecthelpdesk.entity.User;
 import com.projecthelpdesk.projecthelpdesk.exception.ResourceNotFoundException;
 import com.projecthelpdesk.projecthelpdesk.repository.TicketCommentRepository;
 import com.projecthelpdesk.projecthelpdesk.repository.TicketRepository;
 import com.projecthelpdesk.projecthelpdesk.repository.UserRepository;
+import com.projecthelpdesk.projecthelpdesk.repository.TicketActivityRepository;
 
 @Service
 public class CommentService {
@@ -23,13 +25,15 @@ public class CommentService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final TicketActivityRepository activityRepository;
 
     public CommentService(TicketCommentRepository commentRepository, TicketRepository ticketRepository,
-            UserRepository userRepository, NotificationService notificationService) {
+            UserRepository userRepository, NotificationService notificationService, TicketActivityRepository activityRepository) {
         this.commentRepository = commentRepository;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.activityRepository = activityRepository;
     }
 
     public CommentResponse addComment(Long ticketId, CommentRequest request, String email) {
@@ -43,6 +47,8 @@ public class CommentService {
         comment.setTicket(ticket);
         comment.setAuthor(author);
         comment = commentRepository.save(comment);
+
+        activityRepository.save(new TicketActivity(ticket, author, "Added a comment", "COMMENT"));
 
         // Notify ticket creator (if commenter is not the creator)
         if (!ticket.getCreator().getId().equals(author.getId())) {

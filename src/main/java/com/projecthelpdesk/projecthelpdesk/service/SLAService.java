@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.projecthelpdesk.projecthelpdesk.entity.NotificationType;
 import com.projecthelpdesk.projecthelpdesk.entity.Ticket;
+import com.projecthelpdesk.projecthelpdesk.entity.TicketActivity;
+import com.projecthelpdesk.projecthelpdesk.repository.TicketActivityRepository;
 import com.projecthelpdesk.projecthelpdesk.repository.TicketRepository;
 
 @Service
@@ -20,10 +22,12 @@ public class SLAService {
 
     private final TicketRepository ticketRepository;
     private final NotificationService notificationService;
+    private final TicketActivityRepository activityRepository;
 
-    public SLAService(TicketRepository ticketRepository, NotificationService notificationService) {
+    public SLAService(TicketRepository ticketRepository, NotificationService notificationService, TicketActivityRepository activityRepository) {
         this.ticketRepository = ticketRepository;
         this.notificationService = notificationService;
+        this.activityRepository = activityRepository;
     }
 
     /**
@@ -61,6 +65,7 @@ public class SLAService {
             // Reassign to ADMIN or highest level Agent logic could go here.
             
             ticketRepository.save(ticket);
+            activityRepository.save(new TicketActivity(ticket, null, "Ticket auto-escalated due to SLA breach", "ESCALATION"));
             
             // Notify assigned agent
             if (ticket.getAssignedAgent() != null) {

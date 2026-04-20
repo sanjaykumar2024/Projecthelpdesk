@@ -96,8 +96,7 @@ public class AuthService {
         if (user.isEnabled()) {
             // Already enabled, just login
             String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
-            return new AuthResponse(token, user.getId(), user.getEmail(),
-                    user.getFullName(), user.getRole().getRoleName().name());
+            return buildAuthResponse(token, user);
         }
 
         if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
@@ -115,8 +114,7 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
-        return new AuthResponse(token, user.getId(), user.getEmail(),
-                user.getFullName(), user.getRole().getRoleName().name());
+        return buildAuthResponse(token, user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -132,8 +130,7 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
-        return new AuthResponse(token, user.getId(), user.getEmail(),
-                user.getFullName(), user.getRole().getRoleName().name());
+        return buildAuthResponse(token, user);
     }
 
     public AuthResponse processOAuth2Login(String email, String fullName, String provider) {
@@ -162,7 +159,13 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getRoleName().name());
+        return buildAuthResponse(token, user);
+    }
+
+    private AuthResponse buildAuthResponse(String token, User user) {
+        Long deptId = user.getDepartment() != null ? user.getDepartment().getId() : null;
+        String deptName = user.getDepartment() != null ? user.getDepartment().getName() : null;
         return new AuthResponse(token, user.getId(), user.getEmail(),
-                user.getFullName(), user.getRole().getRoleName().name());
+                user.getFullName(), user.getRole().getRoleName().name(), deptId, deptName);
     }
 }

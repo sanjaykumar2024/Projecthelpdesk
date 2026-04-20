@@ -12,7 +12,9 @@ const Auth = {
             userId: data.userId,
             email: data.email,
             fullName: data.fullName,
-            role: data.role
+            role: data.role,
+            departmentId: data.departmentId || null,
+            departmentName: data.departmentName || null
         }));
     },
     logout: () => {
@@ -131,24 +133,40 @@ const ThemeManager = {
     toggle() {
         const current = document.documentElement.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
+        // Add transition class for smooth morph
+        document.body.classList.add('theme-transitioning');
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
+        // Remove transition class after animation completes
+        setTimeout(() => document.body.classList.remove('theme-transitioning'), 600);
     }
 };
 
 // ===== ANIMATED COUNTER =====
-function animateCounter(element, target, duration = 1500) {
-    let start = 0;
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-        start += increment;
-        if (start >= target) {
-            element.textContent = target;
-            clearInterval(timer);
+function animateCounter(element, target, duration = 1200) {
+    if (!element || isNaN(target)) return;
+    const startTime = performance.now();
+    const startVal = 0;
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for smooth deceleration
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = Math.floor(startVal + (target - startVal) * eased);
+        element.textContent = value;
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
         } else {
-            element.textContent = Math.floor(start);
+            element.textContent = target;
+            // Bounce effect on completion
+            element.classList.add('counting');
+            setTimeout(() => element.classList.remove('counting'), 500);
         }
-    }, 16);
+    }
+
+    requestAnimationFrame(update);
 }
 
 // ===== NAVIGATION =====
@@ -208,6 +226,19 @@ function formatDate(dateStr) {
     });
 }
 
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    return formatDate(dateStr);
+}
+
 function getStatusBadge(status) {
     const labels = {
         'OPEN': 'Open',
@@ -223,14 +254,173 @@ function getPriorityBadge(priority) {
     return `<span class="badge badge-${priority.toLowerCase()}">${priority}</span>`;
 }
 
+// ===== SKELETON LOADERS =====
+const Skeleton = {
+    cards(count = 6) {
+        return Array(count).fill('').map(() => `
+            <div class="skeleton-card">
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+                    <div class="skeleton-text w-33" style="margin:0"></div>
+                    <div class="skeleton-badge"></div>
+                </div>
+                <div class="skeleton-text w-75"></div>
+                <div class="skeleton-text w-50"></div>
+                <div style="margin-top:18px;display:flex;justify-content:space-between">
+                    <div class="skeleton-text w-33" style="margin:0"></div>
+                    <div class="skeleton-text w-33" style="margin:0"></div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    table(rows = 5, cols = 5) {
+        return Array(rows).fill('').map(() => `
+            <tr>
+                ${Array(cols).fill('').map(() => `
+                    <td><div class="skeleton-text" style="margin:0;width:${60 + Math.random() * 40}%"></div></td>
+                `).join('')}
+            </tr>
+        `).join('');
+    }
+};
+
+// ===== CONFETTI CELEBRATION =====
+const Confetti = {
+    fire(duration = 2500) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'confetti-canvas';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+        const colors = ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#EF4444'];
+
+        for (let i = 0; i < 120; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: canvas.height + 10,
+                size: Math.random() * 8 + 3,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedX: (Math.random() - 0.5) * 8,
+                speedY: -(Math.random() * 14 + 6),
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 12,
+                gravity: 0.12 + Math.random() * 0.08,
+                opacity: 1
+            });
+        }
+
+        const start = Date.now();
+        function animate() {
+            const elapsed = Date.now() - start;
+            if (elapsed > duration) {
+                canvas.remove();
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.speedY += p.gravity;
+                p.rotation += p.rotSpeed;
+                p.opacity = Math.max(0, 1 - elapsed / duration);
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                ctx.restore();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    }
+};
+
+// ===== CONFIRMATION MODAL =====
+const Modal = {
+    confirm(title, message, onConfirm, confirmText = 'Confirm') {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal-content">
+                <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:12px">${title}</h3>
+                <p style="color:var(--text-secondary);font-size:0.95rem;margin-bottom:24px;line-height:1.6">${message}</p>
+                <div style="display:flex;gap:12px;justify-content:flex-end">
+                    <button class="btn btn-outline btn-sm modal-cancel">Cancel</button>
+                    <button class="btn btn-primary btn-sm modal-confirm">${confirmText}</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const close = () => {
+            const content = overlay.querySelector('.modal-content');
+            content.classList.add('closing');
+            setTimeout(() => overlay.remove(), 200);
+        };
+
+        overlay.querySelector('.modal-cancel').onclick = close;
+        overlay.querySelector('.modal-confirm').onclick = () => {
+            close();
+            if (onConfirm) onConfirm();
+        };
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close();
+        });
+    }
+};
+
 // ===== PAGE INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     ThemeManager.init();
     initNavigation();
 
-    // Page loader hide
+    // Page loader → fade out
     const loader = document.querySelector('.page-loader');
     if (loader) {
-        setTimeout(() => loader.classList.add('hidden'), 500);
+        setTimeout(() => loader.classList.add('loaded'), 300);
+    }
+
+    // Page enter animation
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.classList.add('page-enter');
+    }
+
+    // Mobile hamburger menu
+    const navContainer = document.querySelector('.nav-container');
+    const navLinks = document.querySelector('.nav-links');
+    if (navContainer && navLinks && !document.querySelector('.hamburger')) {
+        const hamburger = document.createElement('button');
+        hamburger.className = 'hamburger';
+        hamburger.setAttribute('aria-label', 'Toggle navigation');
+        hamburger.innerHTML = '<span></span><span></span><span></span>';
+        // Insert after logo
+        const logo = navContainer.querySelector('.nav-logo');
+        if (logo) {
+            logo.after(hamburger);
+        }
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('mobile-open');
+        });
+        // Close on nav link click
+        navLinks.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navLinks.classList.remove('mobile-open');
+            });
+        });
     }
 });
+

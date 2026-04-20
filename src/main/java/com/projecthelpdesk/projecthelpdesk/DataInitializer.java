@@ -42,6 +42,14 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Schema fix skipped: " + e.getMessage());
         }
 
+        // Fix: Expand role_name ENUM to include HOD
+        try (var conn = dataSource.getConnection(); var stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE roles MODIFY COLUMN role_name ENUM('USER','AGENT','ADMIN','HOD') NOT NULL");
+            System.out.println("Schema fix: role_name column updated to include HOD.");
+        } catch (Exception e) {
+            System.out.println("Schema fix (role_name) skipped: " + e.getMessage());
+        }
+
         // Seed roles
         for (ERole eRole : ERole.values()) {
             if (roleRepository.findByRoleName(eRole).isEmpty()) {

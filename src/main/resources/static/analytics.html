@@ -140,7 +140,7 @@
                 <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
                 <a href="/knowledge-base" class="nav-link">📚 KB</a>
-                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT,HOD" style="display:none">Dept Tickets</a>
                 <a href="/all-tickets" class="nav-link" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage</a>
                 <a href="/analytics" class="nav-link active" data-role="ADMIN,AGENT" style="display:none">📊 Analytics</a>
@@ -211,6 +211,28 @@
                 </div>
             </div>
 
+            <!-- Agent Leaderboard -->
+            <div class="agent-table-container" style="margin-bottom:24px">
+                <div class="table-header">
+                    <span style="font-weight:700;font-size:1.1rem">🏆 Agent Leaderboard</span>
+                </div>
+                <div style="padding:20px" id="leaderboardContainer">
+                    <div class="skeleton-card" style="margin-bottom:12px;height:70px"></div>
+                    <div class="skeleton-card" style="margin-bottom:12px;height:70px"></div>
+                    <div class="skeleton-card" style="height:70px"></div>
+                </div>
+            </div>
+
+            <!-- Workload Heatmap -->
+            <div class="agent-table-container" style="margin-bottom:24px">
+                <div class="table-header">
+                    <span style="font-weight:700;font-size:1.1rem">🔥 Workload Heatmap</span>
+                </div>
+                <div style="padding:20px;overflow-x:auto" id="heatmapContainer">
+                    <div class="skeleton-card" style="height:150px"></div>
+                </div>
+            </div>
+
             <div class="agent-table-container">
                 <div class="table-header">Agent Performance</div>
                 <table class="agent-table">
@@ -220,7 +242,9 @@
                             <th>Department</th>
                             <th>Assigned</th>
                             <th>Resolved</th>
-                            <th>Avg Resolution Time</th>
+                            <th>Open</th>
+                            <th>Closure Rate</th>
+                            <th>Avg Resolution</th>
                         </tr>
                     </thead>
                     <tbody id="agentTableBody">
@@ -374,21 +398,27 @@
             const tbody = document.getElementById('agentTableBody');
             
             if (!agents || agents.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No active agents found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No active agents found</td></tr>';
                 return;
             }
 
             // Sort by most resolved
             agents.sort((a, b) => b.totalResolved - a.totalResolved);
 
+            // Render leaderboard
+            renderLeaderboard(agents);
+
+            // Render heatmap
+            renderHeatmap(agents);
+
             tbody.innerHTML = agents.map(agent => {
-                // Determine performance color class based on avg hours
-                // Note: Lower is generally better. Assuming < 24h is good.
                 let perfClass = 'perf-average';
                 if (agent.totalResolved === 0) perfClass = '';
                 else if (agent.avgResolutionHours <= 12) perfClass = 'perf-excellent';
                 else if (agent.avgResolutionHours <= 24) perfClass = 'perf-good';
                 else if (agent.avgResolutionHours > 72) perfClass = 'perf-poor';
+
+                const closureRate = agent.totalAssigned > 0 ? Math.round((agent.totalResolved / agent.totalAssigned) * 100) : 0;
 
                 return `
                     <tr>
@@ -396,10 +426,82 @@
                         <td>${agent.department}</td>
                         <td>${agent.totalAssigned}</td>
                         <td>${agent.totalResolved}</td>
+                        <td>${agent.openTickets || 0}</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-weight:600">${closureRate}%</span>
+                                <div class="progress-bar-wrapper" style="flex:1;max-width:80px">
+                                    <div class="progress-bar-fill" style="width:${closureRate}%"></div>
+                                </div>
+                            </div>
+                        </td>
                         <td class="${perfClass}">${agent.totalResolved > 0 ? agent.avgResolutionHours + ' hrs' : '-'}</td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        function renderLeaderboard(agents) {
+            const container = document.getElementById('leaderboardContainer');
+            const top = agents.slice(0, 5);
+            const rankIcons = ['🥇', '🥈', '🥉'];
+            const rankClasses = ['gold', 'silver', 'bronze'];
+
+            container.innerHTML = top.map((agent, i) => {
+                const closureRate = agent.totalAssigned > 0 ? Math.round((agent.totalResolved / agent.totalAssigned) * 100) : 0;
+                return `
+                    <div class="leaderboard-card" style="animation-delay:${i * 0.1}s">
+                        <div class="leaderboard-rank ${rankClasses[i] || 'other'}">
+                            ${i < 3 ? rankIcons[i] : '#' + (i + 1)}
+                        </div>
+                        <div class="leaderboard-info">
+                            <div class="leaderboard-name">${agent.agentName}</div>
+                            <div class="leaderboard-dept">${agent.department}</div>
+                        </div>
+                        <div class="leaderboard-stats">
+                            <div><span class="leaderboard-stat-value">${agent.totalResolved}</span> resolved</div>
+                            <div><span class="leaderboard-stat-value">${closureRate}%</span> rate</div>
+                            <div><span class="leaderboard-stat-value">${agent.totalResolved > 0 ? agent.avgResolutionHours + 'h' : '-'}</span> avg</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (top.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No agent data yet</p>';
+            }
+        }
+
+        function renderHeatmap(agents) {
+            const container = document.getElementById('heatmapContainer');
+            const statuses = ['Open', 'In Progress', 'On Hold', 'Resolved', 'Closed'];
+
+            if (!agents.length) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No data</p>';
+                return;
+            }
+
+            // Since we don't have per-status breakdown from the API, simulate with available data
+            let html = '<div class="heatmap-grid">';
+            // Header row
+            html += '<div class="heatmap-label"></div>';
+            statuses.forEach(s => html += `<div class="heatmap-label" style="justify-content:center">${s}</div>`);
+
+            agents.slice(0, 8).forEach(agent => {
+                html += `<div class="heatmap-label">${agent.agentName.split(' ')[0]}</div>`;
+                const open = agent.openTickets || 0;
+                const resolved = agent.totalResolved || 0;
+                const assigned = agent.totalAssigned || 0;
+                const inProg = Math.max(0, assigned - open - resolved);
+                const values = [open, inProg, 0, resolved, 0];
+                values.forEach(v => {
+                    const level = v === 0 ? 0 : v <= 1 ? 1 : v <= 3 ? 2 : v <= 5 ? 3 : v <= 10 ? 4 : 5;
+                    html += `<div class="heatmap-cell heat-${level}" title="${v} tickets">${v}</div>`;
+                });
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         loadData();

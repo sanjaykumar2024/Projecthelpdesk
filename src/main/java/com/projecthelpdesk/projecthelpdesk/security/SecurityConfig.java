@@ -49,8 +49,8 @@ public class SecurityConfig {
                                 "/profile", "/notifications", "/knowledge-base",
                                 "/analytics", "/admin-settings")
                         .permitAll()
-                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "AGENT")
-                        .requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "AGENT")
+                        .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "AGENT", "HOD")
+                        .requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "AGENT", "HOD")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/tickets/all").hasRole("ADMIN")
                         .anyRequest().authenticated())

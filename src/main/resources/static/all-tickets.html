@@ -22,7 +22,7 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
                 <a href="/tickets" class="nav-link">My Tickets</a>
                 <a href="/create-ticket" class="nav-link">New Ticket</a>
-                <a href="/department-tickets" class="nav-link" data-role="AGENT" style="display:none">Dept Tickets</a>
+                <a href="/department-tickets" class="nav-link" data-role="AGENT,HOD" style="display:none">Dept Tickets</a>
                 <a href="/all-tickets" class="nav-link active" data-role="ADMIN" style="display:none">All Tickets</a>
                 <a href="/manage-agents" class="nav-link" data-role="ADMIN" style="display:none">Manage Agents</a>
             </div>
@@ -72,11 +72,7 @@
             </div>
 
             <!-- Tickets Grid -->
-            <div class="tickets-grid" id="ticketsGrid">
-                <div class="loader">
-                    <div class="loader-spinner"></div>
-                </div>
-            </div>
+            <div class="tickets-grid" id="ticketsGrid"></div>
         </main>
     </div>
 
@@ -88,15 +84,17 @@
         let allTickets = [];
 
         async function loadTickets() {
+            document.getElementById('ticketsGrid').innerHTML = Skeleton.cards(6);
             try {
                 if (Auth.getRole() === 'ADMIN') {
                     allTickets = await API.get('/tickets/all');
                     renderTickets(allTickets);
                 } else {
-                    window.location.href = '/tickets'; // Redirect non-admins
+                    window.location.href = '/tickets';
                 }
             } catch (error) {
                 Toast.error('Failed to load tickets');
+                document.getElementById('ticketsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">❌</div><h3>Failed to load</h3></div>';
             }
         }
 
@@ -120,23 +118,26 @@
                 return;
             }
             grid.innerHTML = tickets.map((t, i) => `
-                <div class="ticket-card" data-status="${t.status}" style="animation-delay:${i * 0.08}s"
+                <div class="ticket-card ${t.escalated ? 'escalated' : ''}" data-status="${t.status}" style="animation-delay:${i * 0.06}s"
                      onclick="window.location.href='/ticket-detail?id=${t.id}'">
                     <div class="ticket-header">
                         <span class="ticket-id">#${t.id}</span>
                         ${getStatusBadge(t.status)}
                     </div>
                     <div class="ticket-title">${t.title}</div>
-                    <div class="ticket-desc">${t.description}</div>
+                    <div class="ticket-desc">${t.description || 'No description'}</div>
                     <div class="ticket-meta">
                         <span>${getPriorityBadge(t.priority)}</span>
                         <span>🏢 ${t.departmentName}</span>
                     </div>
                     <div class="ticket-meta mt-1">
                         <span>👤 ${t.creatorName}</span>
-                        <span>📅 ${formatDate(t.createdAt)}</span>
+                        <span>🕐 ${timeAgo(t.createdAt)}</span>
                     </div>
-                    ${t.assignedAgentName ? `<div class="ticket-meta mt-1"><span>🔧 Agent: ${t.assignedAgentName}</span></div>` : ''}
+                    ${t.assignedAgentName ? `<div class="ticket-meta mt-1"><span>🔧 ${t.assignedAgentName}</span></div>` : ''}
+                    <div class="quick-actions" onclick="event.stopPropagation()">
+                        <button class="qa-btn qa-view" onclick="window.location.href='/ticket-detail?id=${t.id}'">👁 View</button>
+                    </div>
                 </div>
             `).join('');
         }

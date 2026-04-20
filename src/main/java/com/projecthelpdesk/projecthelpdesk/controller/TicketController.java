@@ -3,6 +3,8 @@ package com.projecthelpdesk.projecthelpdesk.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.projecthelpdesk.projecthelpdesk.dto.UserDTO;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -59,14 +61,19 @@ public class TicketController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<TicketResponse> updateStatus(@PathVariable Long id,
-            @RequestParam String status) {
-        return ResponseEntity.ok(ticketService.updateStatus(id, status));
+            @RequestParam String status, Authentication auth) {
+        return ResponseEntity.ok(ticketService.updateStatus(id, status, auth.getName()));
     }
 
     @PatchMapping("/{id}/assign")
     public ResponseEntity<TicketResponse> assignAgent(@PathVariable Long id,
-            @RequestParam Long agentId) {
-        return ResponseEntity.ok(ticketService.assignAgent(id, agentId));
+            @RequestParam Long agentId, Authentication auth) {
+        return ResponseEntity.ok(ticketService.assignAgent(id, agentId, auth.getName()));
+    }
+
+    @GetMapping("/department-agents")
+    public ResponseEntity<List<UserDTO>> getDepartmentAgents(Authentication auth) {
+        return ResponseEntity.ok(ticketService.getAgentsByDepartment(auth.getName()));
     }
 
     @PatchMapping("/{id}/assign-self")
@@ -87,5 +94,10 @@ public class TicketController {
     @GetMapping("/search")
     public ResponseEntity<List<TicketResponse>> searchTickets(@RequestParam String q) {
         return ResponseEntity.ok(ticketService.searchTickets(q));
+    }
+
+    @GetMapping("/{id}/activities")
+    public ResponseEntity<List<com.projecthelpdesk.projecthelpdesk.dto.ActivityResponse>> getActivities(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getTicketActivities(id));
     }
 }
