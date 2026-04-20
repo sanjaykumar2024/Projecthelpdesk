@@ -241,14 +241,14 @@
                         <div class="stat-icon blue">📂</div>
                         <div class="stat-info">
                             <h3 id="statOpen">0</h3>
-                            <p>Open</p>
+                            <p class="live-indicator"><span class="pulse-dot"></span> Open</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon orange">⏳</div>
                         <div class="stat-info">
                             <h3 id="statInProgress">0</h3>
-                            <p>In Progress</p>
+                            <p class="live-indicator"><span class="pulse-dot pulse-amber"></span> In Progress</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -270,6 +270,14 @@
                         <div class="stat-info">
                             <h3 id="statClosed">0</h3>
                             <p>Closed</p>
+                        </div>
+                    </div>
+                    <!-- Escalated tickets widget for agents/admins -->
+                    <div class="stat-card" id="escalatedCard" style="display:none">
+                        <div class="stat-icon red">⚠️</div>
+                        <div class="stat-info">
+                            <h3 id="statEscalated">0</h3>
+                            <p class="live-indicator"><span class="pulse-dot pulse-red"></span> Escalated</p>
                         </div>
                     </div>
                 </div>
